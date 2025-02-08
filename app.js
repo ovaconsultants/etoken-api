@@ -1,6 +1,6 @@
 const express = require('express');
 // const dotenv = require('dotenv').config({ path: '.env.development' });
-const userRoutes = require('./routes/userRoutes');
+const providerRoutes = require('./routes/providerRoutes');
 const cors = require('cors');
 const cookieParser = require('cookie-parser'); 
 
@@ -19,7 +19,7 @@ app.use(cors({
 app.use(express.json()); // Parse JSON bodies
 
 // Register routes
-app.use('/api/users', userRoutes);
+app.use('/api/provider', providerRoutes);
 
 
 // Start server
