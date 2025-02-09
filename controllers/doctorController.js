@@ -1,5 +1,5 @@
-const db = require("../../config/db");
-const asyncHandler = require("../../middlewares/asyncHandler");
+const db = require("../config/db");
+const asyncHandler = require("../middlewares/asyncHandler");
 
 const insertDoctor = asyncHandler(async (req, res) => {
     const {
