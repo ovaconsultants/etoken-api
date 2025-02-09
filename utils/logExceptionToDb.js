@@ -1,10 +1,10 @@
-const p = require("../config/db");
+const db = require("../config/db");
 
 // Function to log exceptions to the database
 const logExceptionToDb = async (logData) => {
   try {
-    const query = `SELECT ova2.udf_insert_exception_log_from_json($1);`;
-    const response = await p.query(query, [JSON.stringify(logData)]);
+    const query = `SELECT etoken.udf_insert_exception_log_from_json($1);`;
+    const response = await db.query(query, [JSON.stringify(logData)]);
     console.log("Exception logged successfully:", response.rows[0].udf_insert_exception_log_from_json);
   } catch (err) {
     console.error("Failed to log exception to database:", err);

@@ -1,11 +1,12 @@
 const express = require("express");
-const {getCategories} = require("../controllers/providerController");
-const authMiddleware = require("../middleware/authMiddleware");
+const {getCategories, getSubCategoriesByCategoryId} = require("../controllers/providerController");
+//const authMiddleware = require("../middleware/authMiddleware");
 const router = express.Router();
 
 // Public Routes
-router.get("/getCategories", getCategories);
+router.get("/categories", getCategories);
+router.get("/subCategories/:category_id", getSubCategoriesByCategoryId);
 
-router.use(authMiddleware);
+//router.use(authMiddleware);
 
 module.exports = router;

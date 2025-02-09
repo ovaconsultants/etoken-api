@@ -1,6 +1,9 @@
 const express = require('express');
 // const dotenv = require('dotenv').config({ path: '.env.development' });
 const providerRoutes = require('./routes/providerRoutes');
+const doctorRoutes = require('./routes/doctorRoutes');
+const accountRoutes = require('./routes/accountRoutes');
+const patientRoutes = require('./routes/patientRoutes');
 const cors = require('cors');
 const cookieParser = require('cookie-parser'); 
 
@@ -20,6 +23,9 @@ app.use(express.json()); // Parse JSON bodies
 
 // Register routes
 app.use('/api/provider', providerRoutes);
+app.use('/api/registration', accountRoutes);
+app.use('/api/doctor', doctorRoutes);
+app.use('/api/patient', patientRoutes);
 
 
 // Start server
