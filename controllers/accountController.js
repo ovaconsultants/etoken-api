@@ -3,49 +3,62 @@ const asyncHandler = require("../middlewares/asyncHandler");
 
 const getAccounts = asyncHandler(async (req, res) => {
     console.log("getAccounts called");
-  const result = await db.query("SELECT * FROM etoken.fn_get_all_accounts();");
+    try {
+        const result = await db.query("SELECT * FROM etoken.fn_get_all_accounts();");
 
-  if (!result.rows || result.rows.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: "No accounts found."
-    });
-  }
+        res.status(200).json({
+            success: true,
+            message: result.rows.length > 0 ? "Accounts retrieved successfully." : "No accounts found.",
+            accounts: result.rows || [],
+            error: null
+        });
 
-  res.status(200).json({
-    success: true,
-    accounts: result.rows
-  });
+    } catch (error) {
+        console.error("Error fetching accounts:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            accounts: [],
+            error: error.message
+        });
+    }
 });
 
 const getSpecializationsByAccountId = asyncHandler(async (req, res) => {
-  const { account_id } = req.params;
+    const { account_id } = req.params;
 
-  // Validate account_id
-  if (!account_id || isNaN(account_id)) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid account_id. It must be a number."
-    });
-  }
+    // Validate account_id
+    if (!account_id || isNaN(account_id)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid account_id. It must be a number.",
+            specializations: [],
+            error: "Invalid request parameters."
+        });
+    }
 
-  const result = await db.query(
-    "SELECT * FROM etoken.fn_get_specializations_by_account($1);",
-    [account_id]
-  );
+    try {
+        const result = await db.query(
+            "SELECT * FROM etoken.fn_get_specializations_by_account($1);",
+            [account_id]
+        );
 
-  if (!result.rows || result.rows.length === 0) {
-    return res.status(404).json({
-      success: false,
-      message: `No specializations found for account_id ${account_id}`
-    });
-  }
+        res.status(200).json({
+            success: true,
+            message: result.rows.length > 0 ? "Specializations retrieved successfully." : `No specializations found for account_id ${account_id}.`,
+            specializations: result.rows || [],
+            error: null
+        });
 
-  res.status(200).json({
-    success: true,
-    specializations: result.rows
-  });
+    } catch (error) {
+        console.error(`Error fetching specializations for account_id ${account_id}:`, error.message);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            specializations: [],
+            error: error.message
+        });
+    }
 });
 
-module.exports = {getAccounts, getSpecializationsByAccountId };
-
+module.exports = { getAccounts, getSpecializationsByAccountId };
