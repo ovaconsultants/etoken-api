@@ -3,31 +3,31 @@ const asyncHandler = require("../middlewares/asyncHandler");
 
 const insertToken = asyncHandler(async (req, res) => {
     const {
-        patient_id, clinic_id, schedule_id, token_number, emergency,
+        patient_id, clinic_id, schedule_id, emergency,
         fee_amount, fee_status, status, created_by
     } = req.body;
 
     // Validate required fields
-    if (!patient_id || !clinic_id || !token_number || !emergency || !fee_amount || !fee_status || !status || !created_by) {
+    if (!patient_id || !clinic_id || !emergency || !fee_amount || !fee_status || !status || !created_by) {
         return res.status(400).json({
             success: false,
             message: "Missing required fields.",
-            error: "Patient ID, clinic ID, token number, emergency, fee amount, fee status, status, and created_by are required."
+            error: "Patient ID, clinic ID, emergency, fee amount, fee status, status, and created_by are required."
         });
     }
 
     try {
-        // Call the stored procedure
+        // Call the stored procedure (token_no is auto-generated)
         await db.query(
-            "CALL etoken.sp_insert_token($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-            [patient_id, clinic_id, schedule_id, token_number, emergency, fee_amount, fee_status, status, created_by]
+            "CALL etoken.sp_insert_token($1, $2, $3, $4, $5, $6, $7, $8)",
+            [patient_id, clinic_id, schedule_id, emergency, fee_amount, fee_status, status, created_by]
         );
 
         res.status(201).json({
             success: true,
             message: "Token inserted successfully.",
             token: {
-                patient_id, clinic_id, schedule_id, token_number, emergency, fee_amount, fee_status, status, created_by
+                patient_id, clinic_id, schedule_id, emergency, fee_amount, fee_status, status, created_by
             },
             error: null
         });
