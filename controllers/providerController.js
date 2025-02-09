@@ -1,5 +1,5 @@
 const db = require("../config/db");
-const asyncHandler = require("../middleware/asyncHandler"); // Import the wrapper
+const asyncHandler = require("../middlewares/asyncHandler"); // Import the wrapper
 
 const getCategories = asyncHandler(async (req, res) => {
   const result = await db.query("SELECT * FROM etoken.fn_get_all_categories();");
