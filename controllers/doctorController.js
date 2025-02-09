@@ -125,4 +125,59 @@ const insertDoctorClinicSchedule = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { insertDoctor, insertClinic, insertDoctorClinicSchedule };
+const doctorSignIn = asyncHandler(async (req, res) => {
+    const { email_or_mobile, password } = req.body;
+
+    // Validate input fields
+    if (!email_or_mobile || !password) {
+        return res.status(400).json({
+            success: false,
+            message: "Email or mobile number and password are required.",
+            error: "Missing required fields."
+        });
+    }
+
+    try {
+        // Call the stored procedure
+        const result = await db.query(
+            "CALL etoken.sp_doctor_signin($1, $2, NULL, NULL, NULL, NULL, NULL, NULL);",
+            [email_or_mobile, password]
+        );
+
+        // Extract data from the response
+        const doctor = result.rows[0];
+
+        if (!doctor.success) {
+            return res.status(401).json({
+                success: false,
+                message: doctor.message,
+                doctor: null,
+                error: "Invalid credentials"
+            });
+        }
+
+        // Return successful authentication response
+        res.status(200).json({
+            success: true,
+            message: doctor.message,
+            doctor: {
+                doctor_id: doctor.doctor_id,
+                doctor_name: doctor.doctor_name,
+                clinic_id: doctor.clinic_id,
+                clinic_name: doctor.clinic_name
+            },
+            error: null
+        });
+
+    } catch (error) {
+        console.error("Error during doctor sign-in:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            doctor: null,
+            error: error.message
+        });
+    }
+});
+
+module.exports = { insertDoctor, insertClinic, insertDoctorClinicSchedule, doctorSignIn };

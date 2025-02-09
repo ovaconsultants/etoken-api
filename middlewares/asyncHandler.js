@@ -2,7 +2,7 @@
 const logExceptionToDb = require("../utils/logExceptionToDb");
 const asyncHandler = (fn) => async (req, res, next) => {
     try {
-      console.log("asyncHandler called");
+     // console.log("asyncHandler called");
       //logExceptionToDb("request completed successfully");
       await fn(req, res, next);
      
