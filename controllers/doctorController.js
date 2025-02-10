@@ -1,5 +1,21 @@
 const db = require("../config/db");
 const asyncHandler = require("../middlewares/asyncHandler");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+
+const generateToken = (doctor) => {
+    return jwt.sign(
+        {
+            doctor_id: doctor.doctor_id,
+            doctor_name: doctor.doctor_name,
+            clinic_id: doctor.clinic_id,
+            clinic_name: doctor.clinic_name
+        },
+        process.env.JWT_SECRET, // Secret Key
+        { expiresIn: "9999 years" } // Extremely long expiration (practically a lifetime token)
+    );
+};
+
 
 const insertDoctor = asyncHandler(async (req, res) => {
     const {
@@ -127,8 +143,6 @@ const insertDoctorClinicSchedule = asyncHandler(async (req, res) => {
 
 const doctorSignIn = asyncHandler(async (req, res) => {
     const { email_or_mobile, password } = req.body;
-
-    // Validate input fields
     if (!email_or_mobile || !password) {
         return res.status(400).json({
             success: false,
@@ -138,34 +152,35 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Call the stored procedure
         const result = await db.query(
             "CALL etoken.sp_doctor_signin($1, $2, NULL, NULL, NULL, NULL, NULL, NULL);",
             [email_or_mobile, password]
         );
 
-        // Extract data from the response
         const doctor = result.rows[0];
 
-        if (!doctor.success) {
+        if (!doctor || !doctor.success) {
             return res.status(401).json({
                 success: false,
-                message: doctor.message,
+                message: "Invalid credentials",
                 doctor: null,
-                error: "Invalid credentials"
+                error: "Authentication failed."
             });
         }
 
-        // Return successful authentication response
+        // Generate Lifetime JWT Token
+        const token = generateToken(doctor);
+
         res.status(200).json({
             success: true,
-            message: doctor.message,
+            message: "Authentication successful",
             doctor: {
                 doctor_id: doctor.doctor_id,
                 doctor_name: doctor.doctor_name,
                 clinic_id: doctor.clinic_id,
                 clinic_name: doctor.clinic_name
             },
+            token, // Lifetime token
             error: null
         });
 
@@ -179,5 +194,6 @@ const doctorSignIn = asyncHandler(async (req, res) => {
         });
     }
 });
+
 
 module.exports = { insertDoctor, insertClinic, insertDoctorClinicSchedule, doctorSignIn };
