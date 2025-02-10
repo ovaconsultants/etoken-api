@@ -1,5 +1,5 @@
 const express = require("express");
-const { insertDoctor, insertClinic, insertDoctorClinicSchedule } = require("../controllers/doctorController");
+const { insertDoctor, insertClinic, insertDoctorClinicSchedule, doctorSignIn } = require("../controllers/doctorController");
 
 //const authMiddleware = require("../middleware/authMiddleware");
 const router = express.Router();
@@ -8,6 +8,7 @@ const router = express.Router();
 router.post("/addDoctor", insertDoctor);
 router.post("/addClinic", insertClinic);
 router.post("/schedule", insertDoctorClinicSchedule);
+router.post("/signIn", doctorSignIn);
 
 //router.use(authMiddleware);
 
