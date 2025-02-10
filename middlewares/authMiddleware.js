@@ -1,51 +1,33 @@
 const jwt = require("jsonwebtoken");
-const logExceptionToDb = require("../utils/logExceptionToDb");
+require("dotenv").config();
 
-const authMiddleware = async (req, res, next) => {
-  console.log(req.cookies);
-  const token = req.cookies.authToken;
-  console.log("Token: ", token);
+const protect = (req, res, next) => {
+    let token;
 
-  if (!token) {
-    const logData = {
-      exception_message: " token provided.",
-      source: "authMiddleware",
-      severity: "WARNING",
-    };
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+        token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized - No token provided",
+            error: "Access denied"
+        });
+    }
 
     try {
-      await logExceptionToDb(logData);
-    } catch (err) {
-      console.error("Failed to log exception:", err);
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.doctor = decoded;
+        next();
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: "Unauthorized - Invalid token",
+            error: error.message
+        });
     }
-
-    return res.status(401).send({ message: "token provided." });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    const logData = {
-      exception_message: err.message,
-      exception_stacktrace: err.stack,
-      source: "authMiddleware",
-      severity: err.name === "TokenExpiredError" ? "INFO" : "ERROR",
-    };
-
-    try {
-      await logExceptionToDb(logData);
-    } catch (loggingError) {
-      console.error("Failed to log exception:", loggingError);
-    }
-
-    if (err.name === "TokenExpiredError") {
-      return res.status(403).json({ message: "Token has expired." });
-    } else {
-      return res.status(403).json({ message: "Invalid or expired token." });
-    }
-  }
 };
 
-module.exports = authMiddleware;
+module.exports = { protect };
