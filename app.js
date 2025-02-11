@@ -5,6 +5,7 @@ const doctorRoutes = require('./routes/doctorRoutes');
 const accountRoutes = require('./routes/accountRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const tokenRoutes = require('./routes/tokenRoutes');
+const exceptionRoutes= require('./routes/exceptionRoutes');
 const cors = require('cors');
 const cookieParser = require('cookie-parser'); 
 
@@ -28,6 +29,7 @@ app.use('/api/registration', accountRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/token', tokenRoutes);
+app.use('/api/exception', exceptionRoutes);
 
 
 // Start server
