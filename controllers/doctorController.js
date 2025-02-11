@@ -141,6 +141,12 @@ const insertDoctorClinicSchedule = asyncHandler(async (req, res) => {
     }
 });
 
+/* Method: POST
+http://localhost:3001/api/doctor/signin
+Request Body: {
+    "email_or_mobile": "johndoe@example.com",
+    "password": "1234"
+}*/
 const doctorSignIn = asyncHandler(async (req, res) => {
     const { email_or_mobile, password } = req.body;
     if (!email_or_mobile || !password) {
