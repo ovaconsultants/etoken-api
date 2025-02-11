@@ -4,9 +4,10 @@ const {
   insertExceptionLog,
   fetchAllExceptions,
 } = require("../controllers/exceptionController");
+const asyncHandler = require("../middlewares/asyncHandler");
 
 // Route to log exceptions
 router.post("/logException", insertExceptionLog);
-router.post("/fetchAllExceptions", fetchAllExceptions);
+router.get("/fetchAllExceptions", asyncHandler(fetchAllExceptions));
 
 module.exports = router;

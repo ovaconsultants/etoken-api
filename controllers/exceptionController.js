@@ -20,22 +20,18 @@ const insertExceptionLog = asyncHandler(async (req, res) => {
       error: "Missing required fields.",
     });
   }
-
   try {
-    console.log("Call the stored procedure");
-    // Call the stored procedure
     const result = await db.query(
       "CALL etoken.sp_insert_exception_log($1, $2, $3, NULL);",
       [exception_description, platform, created_by]
     );
-    console.log("result", result);
-
     res.status(201).json({
       success: true,
       message: "Exception logged successfully.",
       exception_id: result.rows[0]?.new_exception_id || null,
       error: null,
     });
+
   } catch (error) {
     console.error("Error logging exception:", error.message);
     res.status(500).json({
