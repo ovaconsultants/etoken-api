@@ -46,5 +46,30 @@ const insertExceptionLog = asyncHandler(async (req, res) => {
     });
   }
 });
+/*
+URL: GET /api/exception/fetchAllExceptions
+*/
+const fetchAllExceptions = asyncHandler(async (req, res) => {
+    try {
+        // Call the function to fetch exceptions
+        const result = await db.query("SELECT * FROM etoken.fn_fetch_all_exceptions();");
 
-module.exports = { insertExceptionLog: [protect, insertExceptionLog] };
+        res.status(200).json({
+            success: true,
+            message: result.rows.length > 0 ? "Exceptions retrieved successfully." : "No exceptions found.",
+            exceptions: result.rows || [],
+            error: null
+        });
+
+    } catch (error) {
+        console.error("Error fetching exceptions:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            exceptions: [],
+            error: error.message
+        });
+    }
+});
+
+module.exports = { insertExceptionLog: [protect, insertExceptionLog], fetchAllExceptions };
