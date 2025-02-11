@@ -5,7 +5,7 @@ const router = express.Router();
 
 // Public Routes
 router.get("/categories", getCategories);
-router.get("/subCategories/:category_id", getSubCategoriesByCategoryId);
+router.get("/subCategories", getSubCategoriesByCategoryId);
 
 //router.use(authMiddleware);
 
