@@ -23,10 +23,10 @@ const getAccounts = asyncHandler(async (req, res) => {
         });
     }
 });
-
+//http://localhost:3001/api/registration/specializations?account_id=2
 const getSpecializationsByAccountId = asyncHandler(async (req, res) => {
-    const { account_id } = req.params;
-
+    const { account_id } = req.query;
+    //console.log("account_id", account_id);
     // Validate account_id
     if (!account_id || isNaN(account_id)) {
         return res.status(400).json({
