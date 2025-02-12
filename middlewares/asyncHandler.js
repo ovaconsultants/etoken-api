@@ -3,12 +3,12 @@ const db = require("../config/db");
 
 const asyncHandler = (fn, errorMessage) => async (req, res, next) => {
     try {
-     // console.log("asyncHandler executed for:", req.query);
+        // console.log("asyncHandler executed for:", req.query);
         await fn(req, res, next);
     } catch (error) {
-      //  console.error("Error:", error.message);
+        //console.error("Error:", error.message);
         const platform = "API Server";
-        const created_by = "AsyncHandler "; 
+        const created_by = "AsyncHandler ";
         try {
             await db.query(
                 "CALL etoken.sp_insert_exception_log($1, $2, $3, NULL);",
@@ -20,7 +20,7 @@ const asyncHandler = (fn, errorMessage) => async (req, res, next) => {
         res.status(500).json({
             success: false,
             error: errorMessage + (Object.keys(req.query).length ? "-" + JSON.stringify(req.query) : ""),
-            message: + error.message
+            message: error.message
         });
     }
 };
