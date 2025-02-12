@@ -1,6 +1,7 @@
 const db = require("../config/db");
 const asyncHandler = require("../middlewares/asyncHandler");
 const { protect } = require("../middlewares/authMiddleware");
+
 /*
 URL: POST /api/exception/logException
 Sample request body:{
@@ -29,10 +30,9 @@ const insertExceptionLog = asyncHandler(async (req, res) => {
     exception_id: result.rows[0]?.new_exception_id || null,
     error: null,
   });
-});
-/*
-URL: GET /api/exception/fetchAllExceptions
-*/
+}, "Error logging exception");
+
+//URL: GET /api/exception/fetchAllExceptions
 const fetchAllExceptions = asyncHandler(async (req, res) => {
   const result = await db.query(
     "SELECT * FROM etoken.fn_fetch_all_exceptions();"
@@ -46,7 +46,7 @@ const fetchAllExceptions = asyncHandler(async (req, res) => {
     exceptions: result.rows || [],
     error: null,
   });
-});
+}, "Error fetching exceptions");
 
 module.exports = {
   insertExceptionLog: [protect, insertExceptionLog],
