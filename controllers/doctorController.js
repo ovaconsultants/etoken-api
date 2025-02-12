@@ -2,6 +2,7 @@ const db = require("../config/db");
 const asyncHandler = require("../middlewares/asyncHandler");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const { protect } = require("../middlewares/authMiddleware");
 
 const generateToken = (doctor) => {
     return jwt.sign(
@@ -25,7 +26,6 @@ const insertDoctor = asyncHandler(async (req, res) => {
         mobile_number,
         phone_number,
         email,
-        profile_picture_url,
         created_by
     } = req.body;
 
@@ -39,7 +39,7 @@ const insertDoctor = asyncHandler(async (req, res) => {
     }
     await db.query(
         "CALL etoken.sp_insert_doctor($1, $2, $3, $4, $5, $6, $7, $8);",
-        [first_name, last_name, specialization_id, mobile_number, phone_number, email, profile_picture_url, created_by]
+        [first_name, last_name, specialization_id, mobile_number, phone_number, email, created_by]
     );
 
     res.status(201).json({
@@ -48,6 +48,42 @@ const insertDoctor = asyncHandler(async (req, res) => {
         error: null
     });
 }, "Error inserting doctor:");
+
+/*
+URL: PUT /api/doctor/updateProfilePicture
+Request Body: {
+    "doctor_id": 2,
+    "profile_picture_url": "https://example.com/doctor3.jpg"
+}
+    Bearer Token: JWT Token
+*/
+const updateDoctorProfilePicture = asyncHandler(async (req, res) => {
+    const { doctor_id, profile_picture_url } = req.body;
+
+    // Validate input
+    if (!doctor_id || !profile_picture_url) {
+        return res.status(400).json({
+            success: false,
+            message: "Doctor ID and Profile Picture URL are required.",
+            error: "Missing required fields."
+        });
+    }
+    await db.query(
+        "CALL etoken.sp_update_doctor_profile_picture($1, $2);",
+        [doctor_id, profile_picture_url]
+    );
+
+    res.status(200).json({
+        success: true,
+        message: "Profile picture updated successfully.",
+        doctor_id,
+        profile_picture_url,
+        error: null
+    });
+
+}, "Error updating doctor profile picture:");
+
+
 
 const insertClinic = asyncHandler(async (req, res) => {
     const {
@@ -157,4 +193,4 @@ const doctorSignIn = asyncHandler(async (req, res) => {
 }, "Error during doctor sign-in");
 
 
-module.exports = { insertDoctor, insertClinic, insertDoctorClinicSchedule, doctorSignIn };
+module.exports = { insertDoctor, insertClinic, insertDoctorClinicSchedule, doctorSignIn, updateDoctorProfilePicture: [protect, updateDoctorProfilePicture] };
