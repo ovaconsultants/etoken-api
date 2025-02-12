@@ -16,8 +16,6 @@ const insertPatient = asyncHandler(async (req, res) => {
         });
     }
 
-    try {
-        // Call the stored procedure
         await db.query(
             "CALL etoken.sp_insert_patient($1, $2, $3, $4, $5, $6)",
             [patient_name, mobile_number, email, patient_profile_picture_url, clinic_id, created_by]
@@ -32,15 +30,6 @@ const insertPatient = asyncHandler(async (req, res) => {
             error: null
         });
 
-    } catch (error) {
-        console.error("Error inserting patient:", error.message);
-        res.status(500).json({
-            success: false,
-            message: "Internal Server Error",
-            patient: null,
-            error: error.message
-        });
-    }
-});
+}, "Error inserting patient:");
 
 module.exports = { insertPatient };
