@@ -1,8 +1,9 @@
+
 const db = require("../config/db");
 
-const asyncHandler = (fn) => async (req, res, next) => {
+const asyncHandler = (fn, errorMessage) => async (req, res, next) => {
     try {
-     // console.log("✅ asyncHandler executed for:", req.originalUrl); // Debug log
+     // console.log("asyncHandler executed for:", req.query);
         await fn(req, res, next);
     } catch (error) {
       //  console.error("Error:", error.message);
@@ -16,11 +17,10 @@ const asyncHandler = (fn) => async (req, res, next) => {
         } catch (logError) {
             console.error("Failed to log exception:", logError.message);
         }
-        // Send error response
         res.status(500).json({
             success: false,
-            error: "Internal Server Error",
-            message: error.message
+            error: errorMessage + (Object.keys(req.query).length ? "-" + JSON.stringify(req.query) : ""),
+            message: + error.message
         });
     }
 };
