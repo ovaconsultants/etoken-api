@@ -38,7 +38,7 @@ const insertDoctor = asyncHandler(async (req, res) => {
         });
     }
     await db.query(
-        "CALL etoken.sp_insert_doctor($1, $2, $3, $4, $5, $6, $7, $8);",
+        "CALL etoken.sp_insert_doctor($1, $2, $3, $4, $5, $6, $7);",
         [first_name, last_name, specialization_id, mobile_number, phone_number, email, created_by]
     );
 
