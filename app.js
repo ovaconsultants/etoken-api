@@ -24,12 +24,12 @@ app.use(cors({
 app.use(express.json()); // Parse JSON bodies
 
 // Register routes
-app.use('/api/provider', providerRoutes);
-app.use('/api/registration', accountRoutes);
-app.use('/api/doctor', doctorRoutes);
-app.use('/api/patient', patientRoutes);
-app.use('/api/token', tokenRoutes);
-app.use('/api/exception', exceptionRoutes);
+app.use('/provider', providerRoutes);
+app.use('/registration', accountRoutes);
+app.use('/doctor', doctorRoutes);
+app.use('/patient', patientRoutes);
+app.use('/token', tokenRoutes);
+app.use('/exception', exceptionRoutes);
 
 
 // Start server
