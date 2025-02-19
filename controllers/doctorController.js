@@ -193,4 +193,4 @@ const doctorSignIn = asyncHandler(async (req, res) => {
 }, "Error during doctor sign-in");
 
 
-module.exports = { insertDoctor, insertClinic, insertDoctorClinicSchedule, doctorSignIn, updateDoctorProfilePicture: [protect, updateDoctorProfilePicture] };
+module.exports = { insertDoctor, insertClinic, insertDoctorClinicSchedule, doctorSignIn, updateDoctorProfilePicture };
