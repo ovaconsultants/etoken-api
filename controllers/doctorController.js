@@ -211,6 +211,10 @@ const doctorSignIn = asyncHandler(async (req, res) => {
                 doctor_name::VARCHAR, 
                 clinic_id::INTEGER, 
                 clinic_name::VARCHAR, 
+                clinic_address::VARCHAR, 
+                clinic_city::VARCHAR, 
+                clinic_state::VARCHAR, 
+                clinic_zipcode::VARCHAR, 
                 success::BOOLEAN, 
                 message::VARCHAR 
              FROM etoken.fn_doctor_signin($1, $2);`,
@@ -235,11 +239,15 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Authentication successful",
-      response: response.map((doc) => ({
-        doctor_id: doc.doctor_id,
-        doctor_name: doc.doctor_name,
-        clinic_id: doc.clinic_id,
-        clinic_name: doc.clinic_name,
+      response: response.map((res) => ({
+        doctor_id: res.doctor_id,
+        doctor_name: res.doctor_name,
+        clinic_id: res.clinic_id,
+        clinic_name: res.clinic_name,
+        clinic_address: res.clinic_address,
+        clinic_city: res.clinic_city,
+        clinic_state: res.clinic_state,
+        clinic_zipcode: res.clinic_zipcode,
       })),
       token, // Lifetime token
       error: null,
