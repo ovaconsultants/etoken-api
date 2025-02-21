@@ -62,24 +62,33 @@ const insertDoctor = asyncHandler(async (req, res) => {
 }, "Error inserting doctor:");
 
 /*
-URL: PUT /api/doctor/updateProfilePicture
-Request Body: {
-    "doctor_id": 2,
-    "profile_picture_url": "https://example.com/doctor3.jpg"
+URL: POST /doctor/uploadDoctorProfilePicture
+Request Body form-data: {
+    "doctor_id": 2    ,
+    profile_picture: File
 }
     Bearer Token: JWT Token
 */
-const updateDoctorProfilePicture = asyncHandler(async (req, res) => {
-  const { doctor_id, profile_picture_url } = req.body;
-
-  // Validate input
-  if (!doctor_id || !profile_picture_url) {
+const uploadDoctorProfilePicture = asyncHandler(async (req, res) => {
+  const { doctor_id } = req.body;
+  console.log("res.body", req.body);
+  if (!doctor_id) {
     return res.status(400).json({
       success: false,
-      message: "Doctor ID and Profile Picture URL are required.",
+      message: "Doctor ID is required.",
       error: "Missing required fields.",
     });
   }
+   // Check if file is uploaded
+   if (!req.file) {
+    return res.status(400).json({
+        success: false,
+        message: "No file uploaded.",
+        error: "Please provide an image file."
+    });
+}
+ // Get uploaded file path
+ const profile_picture_url = `/uploads/doctorProfile/${doctor_id}/${req.file.filename}`;
   await db.query("CALL etoken.sp_update_doctor_profile_picture($1, $2);", [
     doctor_id,
     profile_picture_url,
@@ -267,5 +276,5 @@ module.exports = {
   insertClinic,
   insertDoctorClinicSchedule,
   doctorSignIn,
-  updateDoctorProfilePicture,
+  uploadDoctorProfilePicture,
 };
