@@ -45,4 +45,41 @@ const fetchAllPatients = asyncHandler(async (req, res) => {
    
 }, "Error fetching patients:");
 
-module.exports = { insertPatient, fetchAllPatients:[protect, fetchAllPatients] };
+/*
+http://localhost:3001/patient/updatePatient
+Method: PUT
+{
+    "patient_id": 1,
+    "patient_name": "Alice Johnson",
+    "mobile_number": "9876543210",
+    "email": "alice.j@example.com",
+    "modified_by": "AdminUser"
+}
+*/
+const updatePatient = asyncHandler(async (req, res) => {
+    const { patient_id, patient_name, mobile_number, email, modified_by } = req.body;
+
+    // Validate input
+    if (!patient_id || !modified_by) {
+        return res.status(400).json({
+            success: false,
+            message: "Patient ID and Updated By are required.",
+            error: "Missing required fields."
+        });
+    }
+
+
+        const result = await db.query(
+            "SELECT etoken.fn_update_patient($1, $2, $3, $4, $5) AS response_message;",
+            [patient_id, patient_name, mobile_number, email, modified_by]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: result.rows[0]?.response_message || "Update operation completed.",
+            error: null
+        });
+  
+}, "Error updating patient:");
+
+module.exports = { insertPatient, fetchAllPatients:[protect, fetchAllPatients],updatePatient:[protect, updatePatient] };
