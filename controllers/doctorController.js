@@ -2,7 +2,7 @@ const db = require("../config/db");
 const asyncHandler = require("../middlewares/asyncHandler");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const { protect } = require("../middlewares/authMiddleware");
+//const { protect } = require("../middlewares/authMiddleware");
 
 const generateToken = (doctor) => {
   return jwt.sign(

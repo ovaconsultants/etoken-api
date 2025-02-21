@@ -1,5 +1,6 @@
 const db = require("../config/db");
 const asyncHandler = require("../middlewares/asyncHandler");
+const { protect } = require("../middlewares/authMiddleware");
 
 const insertPatient = asyncHandler(async (req, res) => {
     const {
@@ -32,4 +33,16 @@ const insertPatient = asyncHandler(async (req, res) => {
 
 }, "Error inserting patient:");
 
-module.exports = { insertPatient };
+// URL: http://localhost:3001/patient/fetchAllPatients
+const fetchAllPatients = asyncHandler(async (req, res) => {
+        const result = await db.query("SELECT * FROM etoken.fn_fetch_all_patients();");
+        res.status(200).json({
+            success: true,
+            message: result.rows.length > 0 ? "Patients retrieved successfully." : "No active patients found.",
+            patients: result.rows || [],
+            error: null
+        });
+   
+}, "Error fetching patients:");
+
+module.exports = { insertPatient, fetchAllPatients:[protect, fetchAllPatients] };
