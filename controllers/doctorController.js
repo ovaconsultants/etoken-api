@@ -224,6 +224,7 @@ const doctorSignIn = asyncHandler(async (req, res) => {
                 clinic_city::VARCHAR, 
                 clinic_state::VARCHAR, 
                 clinic_zipcode::VARCHAR, 
+                profile_picture_url::VARCHAR, 
                 success::BOOLEAN, 
                 message::VARCHAR 
              FROM etoken.fn_doctor_signin($1, $2);`,
@@ -248,9 +249,10 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Authentication successful",
-      response: response.map((res) => ({
-        doctor_id: res.doctor_id,
-        doctor_name: res.doctor_name,
+      doctor_id: response[0].doctor_id,
+      doctor_name: response[0].doctor_name,
+      profile_picture_url:response[0].profile_picture_url,
+      response: response.map((res) => ({      
         clinic_id: res.clinic_id,
         clinic_name: res.clinic_name,
         clinic_address: res.clinic_address,
