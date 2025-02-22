@@ -62,24 +62,33 @@ const insertDoctor = asyncHandler(async (req, res) => {
 }, "Error inserting doctor:");
 
 /*
-URL: PUT /api/doctor/updateProfilePicture
-Request Body: {
-    "doctor_id": 2,
-    "profile_picture_url": "https://example.com/doctor3.jpg"
+URL: POST /doctor/uploadDoctorProfilePicture
+Request Body form-data: {
+    "doctor_id": 2    ,
+    profile_picture: File
 }
     Bearer Token: JWT Token
 */
-const updateDoctorProfilePicture = asyncHandler(async (req, res) => {
-  const { doctor_id, profile_picture_url } = req.body;
-
-  // Validate input
-  if (!doctor_id || !profile_picture_url) {
+const uploadDoctorProfilePicture = asyncHandler(async (req, res) => {
+  const { doctor_id } = req.body;
+  console.log("res.body", req.body);
+  if (!doctor_id) {
     return res.status(400).json({
       success: false,
-      message: "Doctor ID and Profile Picture URL are required.",
+      message: "Doctor ID is required.",
       error: "Missing required fields.",
     });
   }
+   // Check if file is uploaded
+   if (!req.file) {
+    return res.status(400).json({
+        success: false,
+        message: "No file uploaded.",
+        error: "Please provide an image file."
+    });
+}
+ // Get uploaded file path
+ const profile_picture_url = `/uploads/doctorProfile/${doctor_id}/${req.file.filename}`;
   await db.query("CALL etoken.sp_update_doctor_profile_picture($1, $2);", [
     doctor_id,
     profile_picture_url,
@@ -215,6 +224,7 @@ const doctorSignIn = asyncHandler(async (req, res) => {
                 clinic_city::VARCHAR, 
                 clinic_state::VARCHAR, 
                 clinic_zipcode::VARCHAR, 
+                profile_picture_url::VARCHAR, 
                 success::BOOLEAN, 
                 message::VARCHAR 
              FROM etoken.fn_doctor_signin($1, $2);`,
@@ -239,9 +249,10 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Authentication successful",
-      response: response.map((res) => ({
-        doctor_id: res.doctor_id,
-        doctor_name: res.doctor_name,
+      doctor_id: response[0].doctor_id,
+      doctor_name: response[0].doctor_name,
+      profile_picture_url:response[0].profile_picture_url,
+      response: response.map((res) => ({      
         clinic_id: res.clinic_id,
         clinic_name: res.clinic_name,
         clinic_address: res.clinic_address,
@@ -267,5 +278,5 @@ module.exports = {
   insertClinic,
   insertDoctorClinicSchedule,
   doctorSignIn,
-  updateDoctorProfilePicture,
+  uploadDoctorProfilePicture,
 };

@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require("path");
 // const dotenv = require('dotenv').config({ path: '.env.development' });
 const providerRoutes = require('./routes/providerRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
@@ -14,6 +15,7 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 app.use(cookieParser());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use(cors({
   origin: process.env.WEB_URL, // Use the WEB_URL from environment or fallback to localhost
