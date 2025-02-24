@@ -5,7 +5,7 @@ const { insertPatient, fetchAllPatients,updatePatient } = require("../controller
 const router = express.Router();
 
 // Public Routes
-router.post("/addPatient", insertPatient);
+router.post("/insertPatient", insertPatient);
 router.get("/fetchAllPatients", fetchAllPatients);
 router.put("/updatePatient", updatePatient);
 
