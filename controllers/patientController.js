@@ -2,7 +2,7 @@ const db = require("../config/db");
 const asyncHandler = require("../middlewares/asyncHandler");
 const { protect } = require("../middlewares/authMiddleware");
 
-/* URL: http://localhost:3001/patient/insertPatient
+/* URL: /patient/insertPatient
 Method: POST
 {
     "patient_name": "Alice Johnson",
@@ -44,12 +44,10 @@ const insertPatient = asyncHandler(async (req, res) => {
       null,
     ]
   );
-
   // Extract returned patient_id, patient_name, and message
   const inserted_patient_id = result.rows[0]?.patient_id;
   const inserted_patient_name = result.rows[0]?.inserted_patient_name;
   const message = result.rows[0]?.message;
-
   res.status(201).json({
     success: true,
     message: message || "Patient inserted successfully.",
@@ -111,43 +109,41 @@ const updatePatient = asyncHandler(async (req, res) => {
   });
 }, "Error updating patient:");
 
-
+///patient/fetchIndividualPatientInQueue?patient_id=1&doctor_id=2&clinic_id=2
 const fetchIndividualPatientInQueue = asyncHandler(async (req, res) => {
-    const { patient_id, doctor_id, clinic_id } = req.query;
+  const { patient_id, doctor_id, clinic_id } = req.query;
 
-    // Validate required fields
-    if (!patient_id || !doctor_id || !clinic_id) {
-        return res.status(400).json({
-            success: false,
-            message: "Missing required parameters.",
-            error: "Patient ID, Doctor ID, and Clinic ID are required."
-        });
-    }
+  // Validate required fields
+  if (!patient_id || !doctor_id || !clinic_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required parameters.",
+      error: "Patient ID, Doctor ID, and Clinic ID are required.",
+    });
+  }
 
-        const result = await db.query(
-            "SELECT * FROM etoken.fn_fetch_individual_patient_in_queue($1, $2, $3);",
-            [patient_id, doctor_id, clinic_id]
-        );
+  const result = await db.query(
+    "SELECT * FROM etoken.fn_fetch_individual_patient_in_queue($1, $2, $3);",
+    [patient_id, doctor_id, clinic_id]
+  );
 
-        // Check if queue exists
-        if (!result.rows.length) {
-            return res.status(404).json({
-                success: false,
-                message: "No patient found in the queue.",
-                patients: [],
-                error: "No records found."
-            });
-        }
+  // Check if queue exists
+  if (!result.rows.length) {
+    return res.status(404).json({
+      success: false,
+      message: "No patient found in the queue.",
+      patients: [],
+      error: "No records found.",
+    });
+  }
 
-        res.status(200).json({
-            success: true,
-            message: "Patient queue fetched successfully.",
-            patients: result.rows[0],
-            error: null
-        });
-
-   
-},"Error fetching patient queue:");
+  res.status(200).json({
+    success: true,
+    message: "Patient queue fetched successfully.",
+    patients: result.rows[0],
+    error: null,
+  });
+}, "Error fetching patient queue:");
 
 module.exports = {
   insertPatient,
