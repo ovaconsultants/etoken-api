@@ -4,7 +4,7 @@ const asyncHandler = require("../middlewares/asyncHandler");
 /*
 POST advertisementPayment/insertAdvertisementPayment
 {
-    "ad_id": 42,
+    "ad_id": 2,
     "amount": 500.00,
     "payment_date": "2024-02-20",
     "is_paid": true,
