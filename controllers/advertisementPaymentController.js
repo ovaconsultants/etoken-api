@@ -36,9 +36,9 @@ const insertAdvertisementPayment = asyncHandler(async (req, res) => {
       });
     }
   
-    // Call stored procedure and get response
-    const result = await db.query(
-      "SELECT * FROM etoken.sp_insert_advertisement_payment($1, $2, $3, $4, $5, $6, $7, $8);",
+    // Call stored procedure (SP) correctly
+    await db.query(
+      "CALL etoken.sp_insert_advertisement_payment($1, $2, $3, $4, $5, $6, $7, $8);",
       [
         ad_id,
         amount,
@@ -51,24 +51,10 @@ const insertAdvertisementPayment = asyncHandler(async (req, res) => {
       ]
     );
   
-    // Extract returned values
-    const payment_id = result.rows[0]?.payment_id;
-    const message = result.rows[0]?.message;
-  
-    // If payment_id is NULL, return an error message
-    if (!payment_id) {
-      return res.status(400).json({
-        success: false,
-        message: message || "Error inserting advertisement payment.",
-        error: "Validation failed."
-      });
-    }
-  
     res.status(201).json({
       success: true,
-      message: message,
+      message: "Advertisement payment inserted successfully",
       payment: {
-        payment_id,
         ad_id,
         amount,
         payment_date,
