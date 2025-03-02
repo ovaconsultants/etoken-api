@@ -7,6 +7,8 @@ const accountRoutes = require('./routes/accountRoutes');
 const patientRoutes = require('./routes/patientRoutes');
 const tokenRoutes = require('./routes/tokenRoutes');
 const exceptionRoutes= require('./routes/exceptionRoutes');
+const advertisementRoutes = require('./routes/advertisementRoutes');
+const advertisementPaymentRoutes = require('./routes/advertisementPaymentRoutes');
 const cors = require('cors');
 const cookieParser = require('cookie-parser'); 
 
@@ -32,6 +34,8 @@ app.use('/doctor', doctorRoutes);
 app.use('/patient', patientRoutes);
 app.use('/token', tokenRoutes);
 app.use('/exception', exceptionRoutes);
+app.use('/advertisement', advertisementRoutes);
+app.use('/advertisement-payment', advertisementPaymentRoutes);
 
 
 // Start server
