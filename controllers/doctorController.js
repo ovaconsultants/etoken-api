@@ -273,10 +273,56 @@ const doctorSignIn = asyncHandler(async (req, res) => {
   }
 }, "Error during doctor sign-in");
 
+/* Method: PUT
+URL: doctor/accountToggle
+Request Body: {
+    "doctor_id": 2
+}
+*/
+const doctorAccountToggle = asyncHandler(async (req, res) => {
+  const { doctor_id } = req.body;
+
+  // Validate required fields
+  if (!doctor_id) {
+      return res.status(400).json({
+          success: false,
+          message: "Missing required field.",
+          error: "Doctor ID is required."
+      });
+  }
+
+  // Call stored procedure and get response
+  const result = await db.query(
+      "CALL etoken.sp_doctor_account_toggle($1, $2, $3);",
+      [parseInt(doctor_id), null, null]
+  );
+
+  // Extract returned values
+  const updated_status = result.rows[0]?.updated_status;
+  const message = result.rows[0]?.message;
+
+  // If no status update, return an error
+  if (!updated_status) {
+      return res.status(404).json({
+          success: false,
+          message: message || "Doctor not found.",
+          error: "Invalid Doctor ID."
+      });
+  }
+
+  res.status(200).json({
+      success: true,
+      message: message,
+      doctor_status: updated_status,
+      error: null
+  });
+}, "Error toggling doctor account status");
+
 module.exports = {
   insertDoctor,
   insertClinic,
   insertDoctorClinicSchedule,
   doctorSignIn,
   uploadDoctorProfilePicture,
+  doctorAccountToggle,
 };
