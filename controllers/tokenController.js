@@ -97,7 +97,70 @@ const fetchTokensForPatients = asyncHandler(async (req, res) => {
   });
 }, "Error fetching tokens for patients");
 
+/*
+URL: token/updateToken
+Method: PUT
+Request Body:
+{
+    "token_id": 101,
+    "status": "In Progress",
+    "fee_status": "Paid",
+    "emergency": "Y",
+    "modified_by": "admin"
+}
+*/
+const updateToken = asyncHandler(async (req, res) => {
+  const {
+      token_id,
+      status,
+      fee_status,
+      emergency,
+      modified_by
+  } = req.body;
+
+  // Validate required fields
+  if (!token_id) {
+      return res.status(400).json({
+          success: false,
+          message: "Missing required field.",
+          error: "Token ID is required."
+      });
+  }
+
+  // Call stored procedure
+  const result = await db.query(
+      "CALL etoken.sp_update_token($1, $2, $3, $4, $5, $6);",
+      [
+          token_id,
+          status || null,
+          fee_status || null,
+          emergency || null,
+          modified_by || null,
+          null // OUT parameter for message
+      ]
+  );
+
+  // Extract returned message
+  const message = result.rows[0]?.message;
+
+  // If no message, return an error
+  if (!message) {
+      return res.status(400).json({
+          success: false,
+          message: "Token not found.",
+          error: "Invalid Token ID."
+      });
+  }
+
+  res.status(200).json({
+      success: true,
+      message: message,
+      error: null
+  });
+}, "Error updating token");
+
 module.exports = {
   insertToken: [protect, insertToken],
   fetchTokensForPatients: [protect, fetchTokensForPatients],
+  updateToken: [protect, updateToken],
 };
