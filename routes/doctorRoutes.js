@@ -4,7 +4,8 @@ const { insertDoctor,
      insertDoctorClinicSchedule, 
      doctorSignIn, 
      uploadDoctorProfilePicture,
-    doctorAccountToggle
+    doctorAccountToggle,
+    fetchAllDoctors
  } = require("../controllers/doctorController");
 
 //const authMiddleware = require("../middleware/authMiddleware");
@@ -18,6 +19,7 @@ router.post("/schedule", insertDoctorClinicSchedule);
 router.post("/signIn", doctorSignIn);
 router.post("/uploadDoctorProfilePicture", upload.single("profile_picture"), uploadDoctorProfilePicture);
 router.put("/doctorAccountToggle", doctorAccountToggle);
+router.get("/fetchAllDoctors", fetchAllDoctors);
 
 //router.use(authMiddleware);
 

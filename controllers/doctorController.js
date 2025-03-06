@@ -318,6 +318,32 @@ const doctorAccountToggle = asyncHandler(async (req, res) => {
   });
 }, "Error toggling doctor account status");
 
+// URL: /doctor/fetchAllDoctors
+// Method: GET
+
+const fetchAllDoctors = asyncHandler(async (req, res) => {
+  // Call stored function and get response
+  const result = await db.query("SELECT * FROM etoken.fn_fetch_all_doctors();");
+
+  // If no doctors found
+  if (!result.rows.length) {
+      return res.status(404).json({
+          success: false,
+          message: "No doctors found.",
+          doctors: [],
+          error: "No records found."
+      });
+  }
+
+  res.status(200).json({
+      success: true,
+      message: "Doctors fetched successfully.",
+      doctors: result.rows,
+      error: null
+  });
+}, "Error fetching doctors");
+
+
 module.exports = {
   insertDoctor,
   insertClinic,
@@ -325,4 +351,5 @@ module.exports = {
   doctorSignIn,
   uploadDoctorProfilePicture,
   doctorAccountToggle,
+  fetchAllDoctors
 };
