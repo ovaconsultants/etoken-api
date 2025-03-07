@@ -42,10 +42,10 @@ const insertToken = asyncHandler(async (req, res) => {
       doctor_id,
       created_by,
       schedule_id,
-      emergency,
-      fee_amount,
-      fee_status,
-      status,
+      'N',
+      0.00,
+      'Not Paid',
+      'Waiting',
     ]
   );
 
