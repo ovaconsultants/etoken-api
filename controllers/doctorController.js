@@ -318,6 +318,67 @@ const doctorAccountToggle = asyncHandler(async (req, res) => {
   });
 }, "Error toggling doctor account status");
 
+// URL: /doctor/fetchAllDoctors
+// Method: GET
+
+const fetchAllDoctors = asyncHandler(async (req, res) => {
+  // Call stored function and get response
+  const result = await db.query("SELECT * FROM etoken.fn_fetch_all_doctors();");
+
+  // If no doctors found
+  if (!result.rows.length) {
+      return res.status(404).json({
+          success: false,
+          message: "No doctors found.",
+          doctors: [],
+          error: "No records found."
+      });
+  }
+
+  res.status(200).json({
+      success: true,
+      message: "Doctors fetched successfully.",
+      doctors: result.rows,
+      error: null
+  });
+}, "Error fetching doctors");
+
+const fetchClinicsByDoctorId = asyncHandler(async (req, res) => {
+  const { doctor_id } = req.body;
+
+  // Validate required fields
+  if (!doctor_id || isNaN(doctor_id)) {
+      return res.status(400).json({
+          success: false,
+          message: "Invalid doctor ID.",
+          error: "Doctor ID must be a valid number."
+      });
+  }
+
+  // Call stored function and get response
+  const result = await db.query(
+      "SELECT * FROM etoken.fn_fetch_clinics_by_doctor_id($1);",
+      [parseInt(doctor_id)]
+  );
+
+  // If no clinics found
+  if (!result.rows.length) {
+      return res.status(404).json({
+          success: false,
+          message: `No clinics found for doctor ID ${doctor_id}.`,
+          clinics: [],
+          error: "No records found."
+      });
+  }
+
+  res.status(200).json({
+      success: true,
+      message: "Clinics fetched successfully.",
+      clinics: result.rows,
+      error: null
+  });
+}, "Error fetching clinics for doctor");
+
 module.exports = {
   insertDoctor,
   insertClinic,
@@ -325,4 +386,6 @@ module.exports = {
   doctorSignIn,
   uploadDoctorProfilePicture,
   doctorAccountToggle,
+  fetchAllDoctors,
+  fetchClinicsByDoctorId
 };
