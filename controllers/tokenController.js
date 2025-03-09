@@ -127,6 +127,16 @@ const updateToken = asyncHandler(async (req, res) => {
       });
   }
 
+  // Validate allowed status values
+  const allowedStatuses = ["Waiting", "In Progress", "Completed", "Cancelled"];
+  if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+          success: false,
+          message: `Invalid status: ${status}. Allowed values: ${allowedStatuses.join(", ")}`,
+          error: "Validation failed."
+      });
+  }
+
   // Call stored procedure
   const result = await db.query(
       "CALL etoken.sp_update_token($1, $2, $3, $4, $5, $6);",
