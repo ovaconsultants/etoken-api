@@ -344,7 +344,7 @@ const fetchAllDoctors = asyncHandler(async (req, res) => {
 }, "Error fetching doctors");
 
 const fetchClinicsByDoctorId = asyncHandler(async (req, res) => {
-  const { doctor_id } = req.body;
+  const { doctor_id } = req.query;
 
   // Validate required fields
   if (!doctor_id || isNaN(doctor_id)) {
