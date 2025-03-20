@@ -127,6 +127,16 @@ const updateToken = asyncHandler(async (req, res) => {
       });
   }
 
+  // Validate allowed status values
+  const allowedStatuses = ["Waiting", "In Progress", "Completed", "Cancelled"];
+  if (status && !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+          success: false,
+          message: `Invalid status: ${status}. Allowed values: ${allowedStatuses.join(", ")}`,
+          error: "Validation failed."
+      });
+  }
+
   // Call stored procedure
   const result = await db.query(
       "CALL etoken.sp_update_token($1, $2, $3, $4, $5, $6);",
@@ -159,8 +169,47 @@ const updateToken = asyncHandler(async (req, res) => {
   });
 }, "Error updating token");
 
+const toggleRecallStatus = asyncHandler(async (req, res) => {
+  const { token_id, modified_by } = req.body;
+
+  // Validate required fields
+  if (!token_id || !modified_by) {
+      return res.status(400).json({
+          success: false,
+          message: "Missing required fields.",
+          error: "Token ID and modified_by are required."
+      });
+  }
+
+  // Call stored function
+  const result = await db.query(
+      "SELECT etoken.fn_toggle_recall_status($1, $2) AS message;",
+      [token_id, modified_by]
+  );
+
+  // Extract returned message
+  const message = result.rows[0]?.message;
+
+  // If the function returns an error message
+  if (message.includes("Error")) {
+      return res.status(400).json({
+          success: false,
+          message: message,
+          error: "Validation failed."
+      });
+  }
+
+  res.status(200).json({
+      success: true,
+      message: message,
+      error: null
+  });
+}, "Error toggling recall status");
+
+
 module.exports = {
   insertToken: [protect, insertToken],
   fetchTokensForPatients: [protect, fetchTokensForPatients],
   updateToken: [protect, updateToken],
+  toggleRecallStatus: [protect, toggleRecallStatus],
 };

@@ -1,5 +1,5 @@
 
-
+TRUNCATE TABLE etoken.tbl_advertisement_payment_details RESTART IDENTITY CASCADE;
 TRUNCATE TABLE etoken.tbl_token RESTART IDENTITY CASCADE;
 TRUNCATE TABLE etoken.tbl_doctor_clinic_schedule RESTART IDENTITY CASCADE;
 TRUNCATE TABLE etoken.tbl_clinic RESTART IDENTITY CASCADE;
