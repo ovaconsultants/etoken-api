@@ -212,65 +212,34 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     });
   }
 
-  try {
-    // Query the database function
-    const result = await db.query(
-      `SELECT 
-                doctor_id::INTEGER, 
-                doctor_name::VARCHAR, 
-                clinic_id::INTEGER, 
-                clinic_name::VARCHAR, 
-                clinic_address::VARCHAR, 
-                clinic_city::VARCHAR, 
-                clinic_state::VARCHAR, 
-                clinic_zipcode::VARCHAR, 
-                profile_picture_url::VARCHAR, 
-                success::BOOLEAN, 
-                message::VARCHAR 
-             FROM etoken.fn_doctor_signin($1, $2);`,
-      [email_or_mobile, password]
-    );
+  // Query the database function
+  const result = await db.query(
+    `SELECT * FROM etoken.fn_doctor_signin($1, $2);`,
+    [email_or_mobile, password]
+  );
 
-    const response = result.rows; // Get all rows (array of doctors)
-   // console.log("response", response);
-    // If no doctor found or authentication failed
-    if (!response.length || !response.some((res) => res.success)) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-        doctors: [],
-        error: "Authentication failed.",
-      });
-    }
+  const doctors = result.rows;
 
-    // Generate Lifetime JWT Token
-    const token = generateToken(response); // Assuming token is for all matching doctors
-
-    res.status(200).json({
-      success: true,
-      message: "Authentication successful",
-      doctor_id: response[0].doctor_id,
-      doctor_name: response[0].doctor_name,
-      profile_picture_url:response[0].profile_picture_url,
-      response: response.map((res) => ({      
-        clinic_id: res.clinic_id,
-        clinic_name: res.clinic_name,
-        clinic_address: res.clinic_address,
-        clinic_city: res.clinic_city,
-        clinic_state: res.clinic_state,
-        clinic_zipcode: res.clinic_zipcode,
-      })),
-      token, // Lifetime token
-      error: null,
-    });
-  } catch (error) {
-    console.error("Error during doctor sign-in:", error);
-    return res.status(500).json({
+  // If no doctor found or authentication failed
+  if (!doctors.length || !doctors.some((d) => d.success)) {
+    return res.status(401).json({
       success: false,
-      message: "An error occurred while processing the request.",
-      error: error.message,
+      message: "Invalid credentials",
+      doctors: [],
+      error: "Authentication failed.",
     });
   }
+
+  // Generate JWT token (based on the result)
+  const token = generateToken(doctors);
+
+  res.status(200).json({
+    success: true,
+    message: "Authentication successful",
+    token,
+    doctors,
+    error: null,
+  });
 }, "Error during doctor sign-in");
 
 /* Method: PUT
