@@ -218,29 +218,56 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     [email_or_mobile, password]
   );
 
-  const doctors = result.rows;
+  const rows = result.rows;
 
   // If no doctor found or authentication failed
-  if (!doctors.length || !doctors.some((d) => d.success)) {
+  if (!rows.length || !rows.some((r) => r.success)) {
     return res.status(401).json({
       success: false,
       message: "Invalid credentials",
-      doctors: [],
+      doctor: null,
+      clinics: [],
       error: "Authentication failed.",
     });
   }
 
-  // Generate JWT token (based on the result)
-  const token = generateToken(doctors);
+  // Extract doctor info from the first row
+  const {
+    doctor_id,
+    doctor_name,
+    profile_picture_url,
+    specialization_name,
+    specialization_description,
+  } = rows[0];
+
+  // Map all clinic data from each row
+  const clinics = rows.map((row) => ({
+    clinic_id: row.clinic_id,
+    clinic_name: row.clinic_name,
+    clinic_address: row.clinic_address,
+    clinic_city: row.clinic_city,
+    clinic_state: row.clinic_state,
+    clinic_zipcode: row.clinic_zipcode,
+  }));
+
+  // Generate token (you can pass doctor_id or entire doctor object)
+  const token = generateToken({ doctor_id });
 
   res.status(200).json({
     success: true,
     message: "Authentication successful",
     token,
-    doctors,
+    doctor: {
+      doctor_id,
+      doctor_name,
+      profile_picture_url,
+      specialization_name,
+      specialization_description,
+    },
+    clinics,
     error: null,
   });
-}, "Error during doctor sign-in");
+});
 
 /* Method: PUT
 URL: doctor/accountToggle
