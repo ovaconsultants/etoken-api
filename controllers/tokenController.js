@@ -128,7 +128,7 @@ const updateToken = asyncHandler(async (req, res) => {
   }
 
   // Validate allowed status values
-  const allowedStatuses = ["Waiting", "In Progress", "Completed", "Cancelled"];
+  const allowedStatuses = ["Waiting", "In Progress", "Completed", "Cancelled", "On Hold"];
   if (status && !allowedStatuses.includes(status)) {
       return res.status(400).json({
           success: false,
