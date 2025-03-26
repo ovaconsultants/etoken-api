@@ -196,5 +196,36 @@ const updateAdvertisement = asyncHandler(async (req, res) => {
         error: null
     });
 }, "Error updating advertisement");
+
+//GET /api/advertisements?doctor_id=1&clinic_id=10&filter_type=Active
+
+const fetchAdvertisements = asyncHandler(async (req, res) => {
+    const { doctor_id, clinic_id, filter_type = 'ALL' } = req.query;
   
-module.exports = { insertAdvertisement, fetchActiveAdvertisements,updateAdvertisement };
+    // Validate input
+    if (!doctor_id || !clinic_id) {
+      return res.status(400).json({
+        success: false,
+        message: "doctor_id and clinic_id are required.",
+        error: "Missing parameters.",
+      });
+    }
+  
+    // Call the PostgreSQL function
+    const result = await db.query(
+      `SELECT * FROM etoken.fn_fetch_advertisements($1, $2, $3);`,
+      [doctor_id, clinic_id, filter_type]
+    );
+  
+    const advertisements = result.rows;
+  
+    res.status(200).json({
+      success: true,
+      count: advertisements.length,
+      advertisements,
+      error: null,
+    });
+  }, "Error fetching advertisements");
+  
+  
+module.exports = { insertAdvertisement, fetchActiveAdvertisements, updateAdvertisement, fetchAdvertisements };
