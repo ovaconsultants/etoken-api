@@ -16,6 +16,7 @@ Method: POST
 const insertPatient = asyncHandler(async (req, res) => {
   const {
     patient_name,
+    area,
     mobile_number,
     email,
     patient_profile_picture_url,
@@ -31,9 +32,10 @@ const insertPatient = asyncHandler(async (req, res) => {
     });
   }
   const result = await db.query(
-    "CALL etoken.sp_insert_patient($1, $2, $3, $4, $5, $6, $7, $8, $9);",
+    "CALL etoken.sp_insert_patient($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);",
     [
       patient_name,
+      area,
       mobile_number,
       email,
       patient_profile_picture_url,
@@ -85,7 +87,7 @@ Method: PUT
 }
 */
 const updatePatient = asyncHandler(async (req, res) => {
-  const { patient_id, patient_name, mobile_number, email, modified_by } =
+  const { patient_id, patient_name, area, mobile_number, email, modified_by } =
     req.body;
 
   // Validate input
@@ -98,8 +100,8 @@ const updatePatient = asyncHandler(async (req, res) => {
   }
 
   const result = await db.query(
-    "SELECT etoken.fn_update_patient($1, $2, $3, $4, $5) AS response_message;",
-    [patient_id, patient_name, mobile_number, email, modified_by]
+    "SELECT etoken.fn_update_patient($1, $2, $3, $4, $5, $6) AS response_message;",
+    [patient_id, patient_name, area, mobile_number, email, modified_by]
   );
 
   res.status(200).json({

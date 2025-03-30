@@ -182,6 +182,14 @@ CREATE TABLE etoken.tbl_advertisement_payment_details (
 	company_name varchar(255) NOT NULL,
 	payment_method varchar(100) NULL,
 	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	created_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	modified_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	created_by varchar(100) DEFAULT 'system'::character varying NOT NULL,
+	modified_by varchar(100) NULL,
+	is_active bpchar(1) DEFAULT 'Y'::bpchar NULL,
+	is_deleted bpchar(1) DEFAULT 'N'::bpchar NULL,
+	CONSTRAINT tbl_advertisement_payment_details_is_active_check CHECK ((is_active = ANY (ARRAY['Y'::bpchar, 'N'::bpchar]))),
+	CONSTRAINT tbl_advertisement_payment_details_is_deleted_check CHECK ((is_deleted = ANY (ARRAY['Y'::bpchar, 'N'::bpchar]))),
 	CONSTRAINT tbl_advertisement_payment_details_pkey PRIMARY KEY (payment_id)
 );
 
@@ -339,6 +347,7 @@ CREATE TABLE etoken.tbl_patient (
 	created_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
 	modified_by varchar(100) NULL,
 	modified_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	area varchar(100) NULL,
 	CONSTRAINT tbl_patient_is_active_check CHECK ((is_active = ANY (ARRAY['Y'::bpchar, 'N'::bpchar]))),
 	CONSTRAINT tbl_patient_is_deleted_check CHECK ((is_deleted = ANY (ARRAY['Y'::bpchar, 'N'::bpchar]))),
 	CONSTRAINT tbl_patient_pkey PRIMARY KEY (patient_id),
@@ -369,6 +378,7 @@ CREATE TABLE etoken.tbl_specialization (
 	created_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
 	modified_by varchar(100) NULL,
 	modified_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	specialization_description varchar(255) NULL,
 	CONSTRAINT tbl_specialization_is_active_check CHECK ((is_active = ANY (ARRAY['Y'::bpchar, 'N'::bpchar]))),
 	CONSTRAINT tbl_specialization_is_deleted_check CHECK ((is_deleted = ANY (ARRAY['Y'::bpchar, 'N'::bpchar]))),
 	CONSTRAINT tbl_specialization_pkey PRIMARY KEY (specialization_id),
@@ -543,6 +553,7 @@ CREATE TABLE etoken.tbl_token (
 	created_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
 	modified_by varchar(100) NULL,
 	modified_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+	recall bool DEFAULT false NULL,
 	CONSTRAINT tbl_token_emergency_check CHECK ((emergency = ANY (ARRAY['Y'::bpchar, 'N'::bpchar]))),
 	CONSTRAINT tbl_token_fee_status_check CHECK (((fee_status)::text = ANY ((ARRAY['Paid'::character varying, 'Not Paid'::character varying])::text[]))),
 	CONSTRAINT tbl_token_is_active_check CHECK ((is_active = ANY (ARRAY['Y'::bpchar, 'N'::bpchar]))),
@@ -593,39 +604,49 @@ CREATE TABLE etoken.tbl_advertisements (
 -- DROP FUNCTION etoken.fn_doctor_signin(varchar, varchar);
 
 CREATE OR REPLACE FUNCTION etoken.fn_doctor_signin(p_email_or_mobile character varying, p_password character varying)
- RETURNS TABLE(doctor_id integer, doctor_name character varying, clinic_id integer, clinic_name character varying, clinic_address character varying, clinic_city character varying, clinic_state character varying, clinic_zipcode character varying, profile_picture_url character varying, success boolean, message character varying)
+ RETURNS TABLE(doctor_id integer, doctor_name character varying, clinic_id integer, clinic_name character varying, clinic_address character varying, clinic_city character varying, clinic_state character varying, clinic_zipcode character varying, profile_picture_url character varying, specialization_name character varying, specialization_description character varying, success boolean, message character varying)
  LANGUAGE plpgsql
 AS $function$
 BEGIN
     -- Return all matching doctor records
     RETURN QUERY 
-    SELECT d.doctor_id, 
-           (d.first_name || ' ' || d.last_name)::VARCHAR AS doctor_name, -- Explicitly cast to VARCHAR
-           c.clinic_id, 
-           c.clinic_name::VARCHAR,
-		   c.address as clinic_address,
-		   c.city as clinic_city,
-		   c.state as clinic_state,
-		   c.zip_code as clinic_zipcode,
-           COALESCE(d.profile_picture_url, '')::VARCHAR AS profile_picture_url,
-           CASE 
-               WHEN d.password = p_password THEN TRUE 
-               ELSE FALSE 
-           END AS success,
-           CASE 
-               WHEN d.password = p_password THEN 'Authentication successful'::VARCHAR  -- Explicitly cast to VARCHAR
-               ELSE 'Incorrect password'::VARCHAR  -- Explicitly cast to VARCHAR
-           END AS message
+    SELECT 
+        d.doctor_id, 
+        (d.first_name || ' ' || d.last_name)::VARCHAR AS doctor_name,
+        c.clinic_id, 
+        c.clinic_name::VARCHAR,
+        c.address AS clinic_address,
+        c.city AS clinic_city,
+        c.state AS clinic_state,
+        c.zip_code AS clinic_zipcode,
+        COALESCE(d.profile_picture_url, '')::VARCHAR AS profile_picture_url,
+        s.specialization_name::VARCHAR,
+        s.specialization_description::VARCHAR,
+        CASE 
+            WHEN d.password = p_password THEN TRUE 
+            ELSE FALSE 
+        END AS success,
+        CASE 
+            WHEN d.password = p_password THEN 'Authentication successful'::VARCHAR
+            ELSE 'Incorrect password'::VARCHAR
+        END AS message
     FROM etoken.tbl_doctor d
     INNER JOIN etoken.tbl_clinic c ON d.doctor_id = c.doctor_id
-    WHERE (d.email = p_email_or_mobile OR d.mobile_number = p_email_or_mobile)
-          AND d.is_active = 'Y' 
-          AND d.is_deleted = 'N';
-    
+    LEFT JOIN etoken.tbl_specialization s 
+        ON d.specialization_id = s.specialization_id AND s.is_active = 'Y'
+    WHERE 
+        (d.email = p_email_or_mobile OR d.mobile_number = p_email_or_mobile)
+        AND d.is_active = 'Y' 
+        AND d.is_deleted = 'N';
+
     -- If no record is found, return an error message
     IF NOT FOUND THEN
         RETURN QUERY 
-        SELECT NULL::INT, NULL::VARCHAR, NULL::VARCHAR,NULL::VARCHAR,NULL::VARCHAR,NULL::VARCHAR,NULL::VARCHAR, NULL::INT, NULL::VARCHAR, FALSE, 'Invalid email or mobile number'::VARCHAR;
+        SELECT 
+            NULL::INT, NULL::VARCHAR, NULL::INT, NULL::VARCHAR,
+            NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR,
+            NULL::VARCHAR, NULL::VARCHAR, NULL::VARCHAR,
+            FALSE, 'Invalid email or mobile number'::VARCHAR;
     END IF;
 END;
 $function$
@@ -657,15 +678,126 @@ BEGIN
         p.payment_date,
         p.payment_method
     FROM etoken.tbl_advertisements a
-    INNER JOIN etoken.tbl_doctor d ON a.doctor_id = d.doctor_id
-    INNER JOIN etoken.tbl_clinic c ON d.doctor_id = c.doctor_id
-    INNER JOIN etoken.tbl_advertisement_payment_details p ON a.ad_id = p.ad_id
+    LEFT JOIN etoken.tbl_doctor d ON a.doctor_id = d.doctor_id
+    LEFT JOIN etoken.tbl_clinic c ON d.doctor_id = c.doctor_id
+    LEFT JOIN etoken.tbl_advertisement_payment_details p ON a.ad_id = p.ad_id
     WHERE a.doctor_id = p_doctor_id
     AND c.clinic_id = p_clinic_id
-    AND p.is_paid = TRUE
-    AND p.end_date > CURRENT_DATE
-    AND a.is_active = TRUE
+    -- AND p.is_paid = TRUE  -- Commented out to fetch all advertisements regardless of payment status
+    -- AND p.end_date > CURRENT_DATE  -- Commented out to include expired advertisements
+    AND a.is_active = TRUE  -- Commented out to include inactive advertisements
     ORDER BY a.start_date ASC;
+END;
+$function$
+;
+
+-- DROP FUNCTION etoken.fn_fetch_advertisement_payments_by_ad_id(int4);
+
+CREATE OR REPLACE FUNCTION etoken.fn_fetch_advertisement_payments_by_ad_id(p_ad_id integer)
+ RETURNS TABLE(payment_id integer, ad_id integer, amount numeric, payment_date date, is_paid boolean, effective_date date, end_date date, company_name character varying, payment_method character varying, is_active character, is_deleted character, created_date timestamp without time zone, modified_date timestamp without time zone, created_by character varying, modified_by character varying)
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RETURN QUERY 
+    SELECT 
+        tapd.payment_id,
+        tapd.ad_id,
+        tapd.amount,
+        tapd.payment_date,
+        tapd.is_paid,
+        tapd.effective_date,
+        tapd.end_date,
+        tapd.company_name,
+        tapd.payment_method,
+        tapd.is_active,
+        tapd.is_deleted,
+        tapd.created_date,
+        tapd.modified_date,
+        tapd.created_by,
+        tapd.modified_by
+    FROM etoken.tbl_advertisement_payment_details tapd
+    WHERE 
+        tapd.ad_id = p_ad_id
+        AND tapd.is_deleted = 'N' -- Fetch only non-deleted records
+    ORDER BY tapd.payment_date DESC;
+END;
+$function$
+;
+
+-- DROP FUNCTION etoken.fn_fetch_advertisements(int4, int4, varchar);
+
+CREATE OR REPLACE FUNCTION etoken.fn_fetch_advertisements(p_doctor_id integer, p_clinic_id integer, p_filter_type character varying DEFAULT 'ALL'::character varying)
+ RETURNS TABLE(ad_id integer, doctor_id integer, clinic_id integer, company_name character varying, content_type character varying, content_url text, display_duration integer, display_frequency interval, start_date timestamp without time zone, end_date timestamp without time zone, start_time time without time zone, end_time time without time zone, is_active boolean, amount numeric, payment_date date, payment_method character varying, days_left_to_expire integer)
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        a.ad_id,
+        a.doctor_id,
+        c.clinic_id,
+        a.company_name,
+        a.content_type,
+        a.content_url,
+        a.display_duration,
+        a.display_frequency,
+        a.start_date,
+        a.end_date,
+        a.start_time,
+        a.end_time,
+        a.is_active,
+        p.amount,
+        p.payment_date,
+        p.payment_method,
+        CASE 
+            WHEN a.end_date IS NOT NULL AND a.end_date > CURRENT_DATE 
+                 AND (a.end_date::date - CURRENT_DATE) <= 15
+            THEN (a.end_date::date - CURRENT_DATE)::integer
+            ELSE NULL
+        END AS days_left_to_expire
+    FROM etoken.tbl_advertisements a
+    LEFT JOIN etoken.tbl_doctor d ON a.doctor_id = d.doctor_id
+    LEFT JOIN etoken.tbl_clinic c ON d.doctor_id = c.doctor_id
+    LEFT JOIN etoken.tbl_advertisement_payment_details p ON a.ad_id = p.ad_id
+    WHERE a.doctor_id = p_doctor_id
+      AND c.clinic_id = p_clinic_id
+      AND (
+          LOWER(p_filter_type) = 'all'
+          OR (LOWER(p_filter_type) = 'active' AND p.is_paid = TRUE AND a.end_date > CURRENT_DATE)
+          OR (LOWER(p_filter_type) = 'expired' AND p.is_paid = FALSE AND a.end_date < CURRENT_DATE)
+      )
+    ORDER BY a.start_date ASC;
+END;
+$function$
+;
+
+-- DROP FUNCTION etoken.fn_fetch_all_doctors();
+
+CREATE OR REPLACE FUNCTION etoken.fn_fetch_all_doctors()
+ RETURNS TABLE(doctor_id integer, first_name character varying, last_name character varying, specialization_id integer, specialization_name character varying, mobile_number character varying, phone_number character varying, email character varying, profile_picture_url text, is_active character, created_by character varying, created_date timestamp without time zone, modified_by character varying, modified_date timestamp without time zone)
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RETURN QUERY 
+    SELECT 
+        d.doctor_id,
+        d.first_name,
+        d.last_name,
+        d.specialization_id,
+        s.specialization_name,
+        d.mobile_number,
+        d.phone_number,
+        d.email,
+        d.profile_picture_url,
+        d.is_active,
+        d.created_by,
+        d.created_date,
+        d.modified_by,
+        d.modified_date
+    FROM etoken.tbl_doctor d
+    INNER JOIN etoken.tbl_specialization s ON d.specialization_id = s.specialization_id
+    WHERE d.is_deleted = 'N'
+    ORDER BY d.created_date DESC;
 END;
 $function$
 ;
@@ -697,6 +829,8 @@ $function$
 
 -- DROP FUNCTION etoken.fn_fetch_all_patients();
 
+-- DROP FUNCTION etoken.fn_fetch_all_patients();
+
 CREATE OR REPLACE FUNCTION etoken.fn_fetch_all_patients()
  RETURNS TABLE(patient_id integer, initials character varying, patient_name character varying, mobile_number character varying, email character varying)
  LANGUAGE plpgsql
@@ -719,6 +853,33 @@ BEGIN
     FROM etoken.tbl_patient p
     WHERE p.is_active = 'Y' AND p.is_deleted = 'N'
     ORDER BY p.created_date DESC;
+END;
+$function$
+;
+;
+
+-- DROP FUNCTION etoken.fn_fetch_clinics_by_doctor_id(int4);
+
+CREATE OR REPLACE FUNCTION etoken.fn_fetch_clinics_by_doctor_id(p_doctor_id integer)
+ RETURNS TABLE(clinic_id integer, clinic_name character varying, address character varying, city character varying, state character varying, zip_code character varying, is_active character, created_date timestamp without time zone)
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RETURN QUERY 
+    SELECT 
+        tc.clinic_id,
+        tc.clinic_name,
+        tc.address,
+        tc.city,
+        tc.state,
+        tc.zip_code,
+        tc.is_active,
+        tc.created_date
+    FROM etoken.tbl_clinic tc
+    WHERE doctor_id = p_doctor_id
+    AND tc.is_active = 'Y'
+    AND tc.is_deleted = 'N'
+    ORDER BY created_date DESC;
 END;
 $function$
 ;
@@ -764,27 +925,30 @@ $function$
 -- DROP FUNCTION etoken.fn_fetch_tokens_for_patients(int4, int4);
 
 CREATE OR REPLACE FUNCTION etoken.fn_fetch_tokens_for_patients(p_doctor_id integer, p_clinic_id integer)
- RETURNS TABLE(token_id integer, patient_name character varying, patient_profile_picture_url text, token_no integer, emergency character, fee_amount numeric, fee_status character varying, status character varying, created_date timestamp without time zone)
+ RETURNS TABLE(token_id integer, patient_id integer, patient_name character varying, mobile_number character varying, patient_profile_picture_url text, token_no integer, emergency character, fee_amount numeric, fee_status character varying, status character varying, recall boolean, created_date timestamp without time zone)
  LANGUAGE plpgsql
 AS $function$
 BEGIN
     RETURN QUERY 
     SELECT 
         t.token_id,
+		p.patient_id,
         p.patient_name,
+		p.mobile_number,
         p.patient_profile_picture_url,
         t.token_no,
         t.emergency,
         t.fee_amount,
         t.fee_status,
         t.status,
+        t.recall,  -- ✅ Now correctly returns a BOOLEAN
         t.created_date
     FROM etoken.tbl_token t
     INNER JOIN etoken.tbl_patient p ON t.patient_id = p.patient_id
     WHERE 
         t.doctor_id = p_doctor_id
         AND t.clinic_id = p_clinic_id
-        AND t.status IN ('Waiting', 'In Progress')
+        AND t.status IN ('Waiting', 'In Progress', 'On Hold')
         AND t.is_deleted = 'N'
         AND t.is_active = 'Y'
     ORDER BY t.created_date ASC;
@@ -908,6 +1072,116 @@ END;
 $function$
 ;
 
+-- DROP FUNCTION etoken.fn_insert_token(int4, int4, int4, varchar, int4, bpchar, numeric, varchar, varchar);
+
+CREATE OR REPLACE FUNCTION etoken.fn_insert_token(p_patient_id integer, p_clinic_id integer, p_doctor_id integer, p_created_by character varying, p_schedule_id integer DEFAULT NULL::integer, p_emergency character DEFAULT 'N'::bpchar, p_fee_amount numeric DEFAULT 0.00, p_fee_status character varying DEFAULT 'Not Paid'::character varying, p_status character varying DEFAULT 'Waiting'::character varying)
+ RETURNS TABLE(new_token_id integer, new_token_no integer, message text)
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    existing_token_id INTEGER;
+    existing_token_no INTEGER;
+    new_token_id INTEGER;
+    new_token_no INTEGER;
+BEGIN
+    -- Ensure the patient exists
+    IF NOT EXISTS (SELECT 1 FROM etoken.tbl_patient WHERE patient_id = p_patient_id) THEN
+        RETURN QUERY SELECT NULL, NULL, 'Patient ID does not exist';
+        RETURN;
+    END IF;
+
+    -- Ensure the clinic exists
+    IF NOT EXISTS (SELECT 1 FROM etoken.tbl_clinic WHERE clinic_id = p_clinic_id) THEN
+        RETURN QUERY SELECT NULL, NULL, 'Clinic ID does not exist';
+        RETURN;
+    END IF;
+
+    -- Ensure the doctor exists
+    IF NOT EXISTS (SELECT 1 FROM etoken.tbl_doctor WHERE doctor_id = p_doctor_id) THEN
+        RETURN QUERY SELECT NULL, NULL, 'Doctor ID does not exist';
+        RETURN;
+    END IF;
+
+    -- Ensure the schedule exists if provided
+    IF p_schedule_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM etoken.tbl_doctor_clinic_schedule WHERE schedule_id = p_schedule_id) THEN
+        RETURN QUERY SELECT NULL, NULL, 'Schedule ID does not exist';
+        RETURN;
+    END IF;
+
+    -- Check if the patient already has a token with status 'Waiting' or 'In Progress'
+    SELECT token_id, token_no INTO existing_token_id, existing_token_no
+    FROM etoken.tbl_token
+    WHERE patient_id = p_patient_id 
+    AND clinic_id = p_clinic_id 
+    AND doctor_id = p_doctor_id
+    AND status IN ('Waiting', 'In Progress')
+    AND is_deleted = 'N'
+    AND DATE(created_date) = CURRENT_DATE;
+
+    -- If the patient already has a token, return the existing token
+    IF existing_token_id IS NOT NULL THEN
+        RETURN QUERY SELECT existing_token_id, existing_token_no, 'Patient already has an active token';
+        RETURN;
+    END IF;
+
+    -- Get the next token_no for today in the clinic
+    SELECT COALESCE(MAX(token_no), 0) + 1 INTO new_token_no
+    FROM etoken.tbl_token
+    WHERE clinic_id = p_clinic_id 
+    AND doctor_id = p_doctor_id
+    AND DATE(created_date) = CURRENT_DATE;
+
+    -- Insert new token and return ID
+    INSERT INTO etoken.tbl_token (
+        patient_id, clinic_id, doctor_id, schedule_id, token_no, emergency, fee_amount, 
+        fee_status, status, is_active, is_deleted, created_by, created_date
+    ) 
+    VALUES (
+        p_patient_id, p_clinic_id, p_doctor_id, p_schedule_id, new_token_no, p_emergency, p_fee_amount, 
+        p_fee_status, p_status, 'Y', 'N', p_created_by, CURRENT_TIMESTAMP
+    )
+    RETURNING tbl_token.token_id INTO new_token_id;
+
+    -- Return the inserted token ID, token number, and success message
+    RETURN QUERY SELECT new_token_id, new_token_no, 'Token inserted successfully';
+END;
+$function$
+;
+
+-- DROP FUNCTION etoken.fn_toggle_recall_status(int4, varchar);
+
+CREATE OR REPLACE FUNCTION etoken.fn_toggle_recall_status(p_token_id integer, p_modified_by character varying)
+ RETURNS text
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    current_recall BOOLEAN;
+    new_recall BOOLEAN;
+BEGIN
+    -- Check if the token exists
+    IF NOT EXISTS (SELECT 1 FROM etoken.tbl_token WHERE token_id = p_token_id) THEN
+        RETURN 'Error: Token ID ' || p_token_id || ' does not exist';
+    END IF;
+
+    -- Get the current recall value
+    SELECT recall INTO current_recall FROM etoken.tbl_token WHERE token_id = p_token_id;
+
+    -- Toggle recall value (if true, make false; if false, make true)
+    new_recall := NOT current_recall;
+
+    -- Update recall status
+    UPDATE etoken.tbl_token
+    SET 
+        recall = new_recall,
+        modified_by = p_modified_by,
+        modified_date = CURRENT_TIMESTAMP
+    WHERE token_id = p_token_id;
+
+    RETURN 'Token ID ' || p_token_id || ' recall status toggled to ' || new_recall;
+END;
+$function$
+;
+
 -- DROP FUNCTION etoken.fn_update_patient(int4, varchar, varchar, varchar, varchar);
 
 CREATE OR REPLACE FUNCTION etoken.fn_update_patient(p_patient_id integer, p_patient_name character varying, p_mobile_number character varying, p_email character varying, p_modified_by character varying)
@@ -1008,15 +1282,25 @@ END;
 $procedure$
 ;
 
--- DROP PROCEDURE etoken.sp_insert_advertisement_payment(int4, numeric, date, bool, date, date, varchar, varchar);
+-- DROP PROCEDURE etoken.sp_insert_advertisement_payment(in int4, in numeric, in date, in bool, in date, in date, in varchar, in varchar, out text);
 
-CREATE OR REPLACE PROCEDURE etoken.sp_insert_advertisement_payment(IN p_ad_id integer, IN p_amount numeric, IN p_payment_date date, IN p_is_paid boolean, IN p_effective_date date, IN p_end_date date, IN p_company_name character varying, IN p_payment_method character varying)
+CREATE OR REPLACE PROCEDURE etoken.sp_insert_advertisement_payment(IN p_ad_id integer, IN p_amount numeric, IN p_payment_date date, IN p_is_paid boolean, IN p_effective_date date, IN p_end_date date, IN p_company_name character varying, IN p_payment_method character varying, OUT message text)
  LANGUAGE plpgsql
 AS $procedure$
 BEGIN
     -- Ensure the advertisement exists before inserting payment
     IF NOT EXISTS (SELECT 1 FROM etoken.tbl_advertisements WHERE ad_id = p_ad_id) THEN
-        RAISE EXCEPTION 'Advertisement ID % does not exist', p_ad_id;
+        message := 'Error: Advertisement ID ' || p_ad_id || ' does not exist';
+        RETURN;
+    END IF;
+
+    -- Check if a payment already exists for the given ad_id
+    IF EXISTS (
+        SELECT 1 FROM etoken.tbl_advertisement_payment_details 
+        WHERE ad_id = p_ad_id
+    ) THEN
+        message := 'Error: Payment for Advertisement ID ' || p_ad_id || ' already exists';
+        RETURN;
     END IF;
 
     -- Insert into payment details table
@@ -1029,7 +1313,7 @@ BEGIN
     );
 
     -- Return success message
-    RAISE NOTICE 'Advertisement payment inserted successfully';
+    message := 'Advertisement payment inserted successfully for Ad ID ' || p_ad_id;
 END;
 $procedure$
 ;
@@ -1286,6 +1570,51 @@ END;
 $procedure$
 ;
 
+-- DROP PROCEDURE etoken.sp_update_advertisement_payment(in int4, in int4, in numeric, in date, in bool, in date, in date, in varchar, in varchar, in bpchar, in bpchar, in varchar, out text);
+
+CREATE OR REPLACE PROCEDURE etoken.sp_update_advertisement_payment(IN p_payment_id integer, IN p_ad_id integer, IN p_amount numeric, IN p_payment_date date, IN p_is_paid boolean, IN p_effective_date date, IN p_end_date date, IN p_company_name character varying, IN p_payment_method character varying, IN p_is_active character, IN p_is_deleted character, IN p_modified_by character varying, OUT message text)
+ LANGUAGE plpgsql
+AS $procedure$
+BEGIN
+    -- Check if the payment record exists
+    IF NOT EXISTS (SELECT 1 FROM etoken.tbl_advertisement_payment_details WHERE payment_id = p_payment_id) THEN
+        message := 'Error: Payment ID ' || p_payment_id || ' does not exist';
+        RETURN;
+    END IF;
+
+    -- Validate is_active and is_deleted
+    IF p_is_active NOT IN ('Y', 'N') THEN
+        message := 'Error: Invalid is_active value. Allowed values: Y, N';
+        RETURN;
+    END IF;
+
+    IF p_is_deleted NOT IN ('Y', 'N') THEN
+        message := 'Error: Invalid is_deleted value. Allowed values: Y, N';
+        RETURN;
+    END IF;
+
+    -- Update advertisement payment details
+    UPDATE etoken.tbl_advertisement_payment_details
+    SET 
+        ad_id = COALESCE(p_ad_id, ad_id),
+        amount = COALESCE(p_amount, amount),
+        payment_date = COALESCE(p_payment_date, payment_date),
+        is_paid = COALESCE(p_is_paid, is_paid),
+        effective_date = COALESCE(p_effective_date, effective_date),
+        end_date = COALESCE(p_end_date, end_date),
+        company_name = COALESCE(p_company_name, company_name),
+        payment_method = COALESCE(p_payment_method, payment_method),
+        is_active = p_is_active,
+        is_deleted = p_is_deleted,
+        modified_by = p_modified_by,
+        modified_date = CURRENT_TIMESTAMP
+    WHERE payment_id = p_payment_id;
+
+    message := 'Payment ID ' || p_payment_id || ' updated successfully';
+END;
+$procedure$
+;
+
 -- DROP PROCEDURE etoken.sp_update_doctor_profile_picture(int4, varchar);
 
 CREATE OR REPLACE PROCEDURE etoken.sp_update_doctor_profile_picture(IN p_doctor_id integer, IN p_profile_picture_url character varying)
@@ -1316,9 +1645,15 @@ CREATE OR REPLACE PROCEDURE etoken.sp_update_token(IN p_token_id integer, IN p_s
  LANGUAGE plpgsql
 AS $procedure$
 BEGIN
-    -- Check if the token exists
+    -- Check if token exists
     IF NOT EXISTS (SELECT 1 FROM etoken.tbl_token WHERE token_id = p_token_id) THEN
         message := 'Token ID ' || p_token_id || ' does not exist';
+        RETURN;
+    END IF;
+
+    -- Validate status (allowed values: Waiting, In Progress, Completed, Cancelled, On Hold)
+    IF p_status IS NOT NULL AND p_status NOT IN ('Waiting', 'In Progress', 'Completed', 'Cancelled', 'On Hold') THEN
+        message := 'Invalid status: ' || p_status || '. Allowed values: Waiting, In Progress, Completed, Cancelled, On Hold';
         RETURN;
     END IF;
 
@@ -1328,7 +1663,7 @@ BEGIN
         status = COALESCE(p_status, status),
         fee_status = COALESCE(p_fee_status, fee_status),
         emergency = COALESCE(p_emergency, emergency),
-        modified_by = COALESCE(p_modified_by,'Admin'),
+        modified_by = p_modified_by,
         modified_date = CURRENT_TIMESTAMP
     WHERE token_id = p_token_id;
 
