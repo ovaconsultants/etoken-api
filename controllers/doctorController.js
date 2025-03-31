@@ -44,22 +44,32 @@ const insertDoctor = asyncHandler(async (req, res) => {
       error: "Validation Error",
     });
   }
-  await db.query("CALL etoken.sp_insert_doctor($1, $2, $3, $4, $5, $6, $7);", [
-    first_name,
-    last_name,
-    specialization_id,
-    mobile_number,
-    phone_number,
-    email,
-    created_by,
-  ]);
+
+  // Execute the procedure and get OUT params
+  const result = await db.query(
+    `SELECT * FROM etoken.sp_insert_doctor($1, $2, $3, $4, $5, $6, $7);`,
+    [
+      first_name,
+      last_name,
+      specialization_id,
+      mobile_number,
+      phone_number,
+      email,
+      created_by,
+    ]
+  );
+
+  const { doctor_id, doctor_name, message } = result.rows[0];
 
   res.status(201).json({
     success: true,
-    message: "Doctor added successfully",
+    message,
+    doctor_id,
+    doctor_name,
     error: null,
   });
 }, "Error inserting doctor:");
+
 
 /*
 URL: POST /doctor/uploadDoctorProfilePicture
