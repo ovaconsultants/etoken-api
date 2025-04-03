@@ -114,9 +114,17 @@ const uploadDoctorProfilePicture = asyncHandler(async (req, res) => {
 }, "Error updating doctor profile picture:");
 
 const insertClinic = asyncHandler(async (req, res) => {
-  const { clinic_name, address, city, state, zip_code, doctor_id, created_by } =
-    req.body;
+  const {
+    clinic_name,
+    address,
+    city,
+    state,
+    zip_code,
+    doctor_id,
+    created_by,
+  } = req.body;
 
+  // Validate required fields
   if (
     !clinic_name ||
     !address ||
@@ -133,20 +141,10 @@ const insertClinic = asyncHandler(async (req, res) => {
     });
   }
 
-  await db.query("CALL etoken.sp_insert_clinic($1, $2, $3, $4, $5, $6, $7)", [
-    clinic_name,
-    address,
-    city,
-    state,
-    zip_code,
-    doctor_id,
-    created_by,
-  ]);
-
-  res.status(201).json({
-    success: true,
-    message: "Clinic inserted successfully.",
-    clinic: {
+  // Call the procedure using SELECT to capture OUT parameters
+  const result = await db.query(
+    `SELECT * FROM etoken.sp_insert_clinic($1, $2, $3, $4, $5, $6, $7);`,
+    [
       clinic_name,
       address,
       city,
@@ -154,6 +152,18 @@ const insertClinic = asyncHandler(async (req, res) => {
       zip_code,
       doctor_id,
       created_by,
+    ]
+  );
+
+  const { out_doctor_id, out_clinic_id, out_clinic_name } = result.rows[0];
+
+  res.status(201).json({
+    success: true,
+    message: "Clinic inserted successfully.",
+    clinic: {
+      clinic_id: out_clinic_id,
+      clinic_name: out_clinic_name,
+      doctor_id: out_doctor_id,
     },
     error: null,
   });
