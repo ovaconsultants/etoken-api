@@ -23,9 +23,18 @@ const insertDoctor = asyncHandler(async (req, res) => {
     last_name,
     specialization_id,
     mobile_number,
-    phone_number,
+    phone_number = null,
     email,
     created_by,
+    gender = null,
+    date_of_birth = null,
+    qualification = null,
+    experience_years = null,
+    consultation_fee = null,
+    biography = null,
+    address = null,
+    registration_number = null,
+    specialization = null
   } = req.body;
 
   // Validate required fields
@@ -45,9 +54,12 @@ const insertDoctor = asyncHandler(async (req, res) => {
     });
   }
 
-  // Execute the procedure and get OUT params
+  // Execute the function and capture return
   const result = await db.query(
-    `SELECT * FROM etoken.sp_insert_doctor($1, $2, $3, $4, $5, $6, $7);`,
+    `SELECT * FROM etoken.sp_insert_doctor(
+      $1, $2, $3, $4, $5, $6, $7,
+      $8, $9, $10, $11, $12, $13, $14, $15, $16
+    );`,
     [
       first_name,
       last_name,
@@ -56,6 +68,15 @@ const insertDoctor = asyncHandler(async (req, res) => {
       phone_number,
       email,
       created_by,
+      gender,
+      date_of_birth,
+      qualification,
+      experience_years,
+      consultation_fee,
+      biography,
+      address,
+      registration_number,
+      specialization
     ]
   );
 
@@ -69,6 +90,67 @@ const insertDoctor = asyncHandler(async (req, res) => {
     error: null,
   });
 }, "Error inserting doctor:");
+
+const updateDoctor = asyncHandler(async (req, res) => {
+  console.log(req.body);
+  const {
+    doctor_id,
+    mobile_number,
+    phone_number,
+    email,
+    gender,
+    date_of_birth,
+    qualification,
+    experience_years,
+    consultation_fee,
+    biography,
+    address,
+    registration_number,
+    specialization,
+    profile_picture_url,
+    modified_by
+  } = req.body;
+
+  if (!doctor_id) {
+    return res.status(400).json({
+      success: false,
+      message: "doctor_id is required.",
+      error: "Missing required field: doctor_id"
+    });
+  }
+
+  const result = await db.query(
+    `SELECT etoken.sp_update_doctor_profile(
+      $1, $2, $3, $4, $5, $6, $7, $8,
+      $9, $10, $11, $12, $13, $14, $15
+    ) AS message;`,
+    [
+      doctor_id,
+      mobile_number || null,
+      phone_number || null,
+      email || null,
+      gender || null,
+      date_of_birth || null,
+      qualification || null,
+      experience_years || null,
+      consultation_fee || null,
+      biography || null,
+      address || null,
+      registration_number || null,
+      specialization || null,
+      profile_picture_url || null,
+      modified_by || null
+    ]
+  );
+
+  const message = result.rows[0].message;
+
+  res.status(200).json({
+    success: true,
+    message,
+    error: null
+  });
+}, "Error updating doctor");
 
 
 /*
@@ -232,7 +314,7 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     });
   }
 
-  // Query the database function
+  // Call the function
   const result = await db.query(
     `SELECT * FROM etoken.fn_doctor_signin($1, $2);`,
     [email_or_mobile, password]
@@ -240,7 +322,7 @@ const doctorSignIn = asyncHandler(async (req, res) => {
 
   const rows = result.rows;
 
-  // If no doctor found or authentication failed
+  // Check for failed login
   if (!rows.length || !rows.some((r) => r.success)) {
     return res.status(401).json({
       success: false,
@@ -251,16 +333,25 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     });
   }
 
-  // Extract doctor info from the first row
+  // Extract doctor profile from first matching row
   const {
     doctor_id,
     doctor_name,
     profile_picture_url,
     specialization_name,
     specialization_description,
+    gender,
+    date_of_birth,
+    qualification,
+    experience_years,
+    consultation_fee,
+    biography,
+    address,
+    registration_number,
+    specialization
   } = rows[0];
 
-  // Map all clinic data from each row
+  // Collect clinics from all matched rows
   const clinics = rows.map((row) => ({
     clinic_id: row.clinic_id,
     clinic_name: row.clinic_name,
@@ -270,9 +361,10 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     clinic_zipcode: row.clinic_zipcode,
   }));
 
-  // Generate token (you can pass doctor_id or entire doctor object)
+  // Generate token
   const token = generateToken({ doctor_id });
 
+  // Respond with full profile
   res.status(200).json({
     success: true,
     message: "Authentication successful",
@@ -281,13 +373,23 @@ const doctorSignIn = asyncHandler(async (req, res) => {
       doctor_id,
       doctor_name,
       profile_picture_url,
+      gender,
+      date_of_birth,
+      qualification,
+      experience_years,
+      consultation_fee,
+      biography,
+      address,
+      registration_number,
+      specialization,
       specialization_name,
       specialization_description,
     },
     clinics,
     error: null,
   });
-});
+},"Error signing in doctor:");
+
 
 /* Method: PUT
 URL: doctor/accountToggle
@@ -397,6 +499,7 @@ const fetchClinicsByDoctorId = asyncHandler(async (req, res) => {
 
 module.exports = {
   insertDoctor,
+  updateDoctor,
   insertClinic,
   insertDoctorClinicSchedule,
   doctorSignIn,

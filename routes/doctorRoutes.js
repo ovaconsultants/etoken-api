@@ -1,19 +1,22 @@
 const express = require("express");
-const { insertDoctor,
-     insertClinic, 
-     insertDoctorClinicSchedule, 
-     doctorSignIn, 
-     uploadDoctorProfilePicture,
-    doctorAccountToggle,
-    fetchAllDoctors,
-    fetchClinicsByDoctorId
- } = require("../controllers/doctorController");
+const {
+   insertDoctor,
+   updateDoctor,
+   insertClinic,
+   insertDoctorClinicSchedule,
+   doctorSignIn,
+   uploadDoctorProfilePicture,
+   doctorAccountToggle,
+   fetchAllDoctors,
+   fetchClinicsByDoctorId
+} = require("../controllers/doctorController");
 
 const upload = require("../middlewares/uploadMiddleware");
 const router = express.Router();
 
 // Public Routes
 router.post("/addDoctor", insertDoctor);
+router.put("/updateDoctor", updateDoctor);
 router.post("/addClinic", insertClinic);
 router.post("/schedule", insertDoctorClinicSchedule);
 router.post("/signIn", doctorSignIn);
