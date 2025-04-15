@@ -22,7 +22,7 @@ router.post("/schedule", insertDoctorClinicSchedule);
 router.post("/signIn", doctorSignIn);
 router.post("/uploadDoctorProfilePicture", upload.single("profile_picture"), uploadDoctorProfilePicture);
 router.put("/doctorAccountToggle", doctorAccountToggle);
-router.get("/fetchAllDoctors", fetchAllDoctors);
+router.post("/fetchAllDoctors", fetchAllDoctors);
 router.get("/fetchClinicsByDoctorId", fetchClinicsByDoctorId);
 
 module.exports = router;

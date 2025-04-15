@@ -440,26 +440,31 @@ const doctorAccountToggle = asyncHandler(async (req, res) => {
 // Method: GET
 
 const fetchAllDoctors = asyncHandler(async (req, res) => {
-  // Call stored function and get response
-  const result = await db.query("SELECT * FROM etoken.fn_fetch_all_doctors();");
+  const { doctor_id } = req.body;
+  console.log("doctor_id", doctor_id);
 
-  // If no doctors found
+  const sql = "SELECT * FROM etoken.fn_fetch_all_doctors($1);";
+  const param = doctor_id ?? null; // Send null if doctor_id is undefined
+
+  const result = await db.query(sql, [param]);
+
   if (!result.rows.length) {
-      return res.status(404).json({
-          success: false,
-          message: "No doctors found.",
-          doctors: [],
-          error: "No records found."
-      });
+    return res.status(404).json({
+      success: false,
+      message: doctor_id ? "Doctor not found." : "No doctors found.",
+      doctors: [],
+      error: "No records found."
+    });
   }
 
   res.status(200).json({
-      success: true,
-      message: "Doctors fetched successfully.",
-      doctors: result.rows,
-      error: null
+    success: true,
+    message: doctor_id ? "Doctor fetched successfully." : "Doctors fetched successfully.",
+    doctors: result.rows,
+    error: null
   });
 }, "Error fetching doctors");
+
 
 const fetchClinicsByDoctorId = asyncHandler(async (req, res) => {
   const { doctor_id } = req.query;
