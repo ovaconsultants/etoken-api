@@ -348,7 +348,8 @@ const doctorSignIn = asyncHandler(async (req, res) => {
     biography,
     address,
     registration_number,
-    specialization
+    specialization,
+    phone_number
   } = rows[0];
 
   // Collect clinics from all matched rows
@@ -384,6 +385,7 @@ const doctorSignIn = asyncHandler(async (req, res) => {
       specialization,
       specialization_name,
       specialization_description,
+      phone_number,
     },
     clinics,
     error: null,
