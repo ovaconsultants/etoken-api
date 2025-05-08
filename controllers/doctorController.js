@@ -486,16 +486,6 @@ const fetchClinicsByDoctorId = asyncHandler(async (req, res) => {
       [parseInt(doctor_id)]
   );
 
-  // If no clinics found
-  if (!result.rows.length) {
-      return res.status(404).json({
-          success: false,
-          message: `No clinics found for doctor ID ${doctor_id}.`,
-          clinics: [],
-          error: "No records found."
-      });
-  }
-
   res.status(200).json({
       success: true,
       message: "Clinics fetched successfully.",
