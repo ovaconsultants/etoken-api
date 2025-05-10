@@ -1,8 +1,10 @@
 const db = require("../config/db");
-const fs = require("fs");
 const path = require("path");
 const asyncHandler = require("../middlewares/asyncHandler");
 const jwt = require("jsonwebtoken");
+const supabase = require('../lib/supabaseClient');
+const bucketName = process.env.SUPABASE_STORAGE_BUCKET_NAME;
+
 require("dotenv").config();
 //const { protect } = require("../middlewares/authMiddleware");
 
@@ -163,51 +165,78 @@ Request Body form-data: {
 }
     Bearer Token: JWT Token
 */
-const uploadDoctorProfilePicture = asyncHandler(async (req, res) => {
+
+const uploadDoctorProfilePicture = async (req, res) => {
   const { doctor_id } = req.body;
 
-  if (!doctor_id) {
+  if (!req.file || !doctor_id) {
     return res.status(400).json({
       success: false,
-      message: "Doctor ID is required.",
-      error: "Missing required fields.",
+      message: "Missing file or doctor_id",
     });
   }
 
-  if (!req.file) {
-    return res.status(400).json({
+  const folderPath = `doctor-profile/${doctor_id}/`;
+
+  // 1. List existing files in the folder
+  const { data: files, error:listError } = await supabase.storage
+    .from("e-token-dev-storage")
+    .list(folderPath);
+
+    if (listError) {
+      return res.status(500).json({
+        success: false,
+        message: "listError failed",
+        error: listError.message,
+      });
+    }
+  // 2. Delete all files in that folder
+  if (files && files.length > 0) {
+    const filePathsToDelete = files.map(f => `${folderPath}${f.name}`);
+    await supabase.storage
+      .from("e-token-dev-storage")
+      .remove(filePathsToDelete);
+  }
+
+  // 3. Upload new image
+  const fileExt = path.extname(req.file.originalname); // e.g., .jpg or .png
+  const filePath = `${folderPath}profilePicture${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("e-token-dev-storage")
+    .upload(filePath, req.file.buffer, {
+      contentType: req.file.mimetype,
+      upsert: true,
+    });
+
+  if (uploadError) {
+    return res.status(500).json({
       success: false,
-      message: "No file uploaded.",
-      error: "Please provide an image file.",
+      message: "Upload failed",
+      error: uploadError.message,
     });
   }
 
-  const doctorDir = path.join(__dirname, "../uploads/doctorProfile", doctor_id.toString());
-  if (!fs.existsSync(doctorDir)) {
-    fs.mkdirSync(doctorDir, { recursive: true });
+  // 4. Generate signed URL
+  const { data: signedUrlData, error: signedError } = await supabase.storage
+    .from("e-token-dev-storage")
+    .createSignedUrl(filePath, 3600);
+
+  if (signedError) {
+    return res.status(500).json({
+      success: false,
+      message: "Signed URL generation failed",
+      error: signedError.message,
+    });
   }
-
-  const ext = path.extname(req.file.originalname);
-  const newFilename = `profile_pic_${doctor_id}${ext}`;
-  const newPath = path.join(doctorDir, newFilename);
-
-  fs.renameSync(req.file.path, newPath);
-
-  const profile_picture_url = `/uploads/doctorProfile/${doctor_id}/${newFilename}`;
-
-  await db.query("CALL etoken.sp_update_doctor_profile_picture($1, $2);", [
-    doctor_id,
-    profile_picture_url,
-  ]);
 
   res.status(200).json({
     success: true,
-    message: "Profile picture updated successfully.",
     doctor_id,
-    profile_picture_url,
-    error: null,
+    profile_picture_url: signedUrlData.signedUrl,
   });
-});
+};
+
 
 const insertClinic = asyncHandler(async (req, res) => {
   const {
@@ -508,6 +537,54 @@ const fetchClinicsByDoctorId = asyncHandler(async (req, res) => {
   });
 }, "Error fetching clinics for doctor");
 
+const getDoctorProfilePicture = async (req, res) => {
+  const { doctor_id } = req.query;
+
+  if (!doctor_id) {
+    return res.status(400).json({
+      success: false,
+      message: "doctor_id is required",
+    });
+  }
+
+  const folderPath = `doctor-profile/${doctor_id}/`;
+
+  // List files in the folder
+  const { data: files, error: listError } = await supabase.storage
+    .from(bucketName)
+    .list(folderPath);
+
+  if (listError || !files.length) {
+    return res.status(404).json({
+      success: false,
+      message: "Profile picture not found",
+      error: listError?.message || "No image in folder",
+    });
+  }
+
+  // Pick first file (assuming only one image exists)
+  const imageFile = files[0].name;
+  const fullPath = `${folderPath}${imageFile}`;
+
+  const { data: signedUrlData, error: signedError } = await supabase.storage
+    .from("e-token-dev-storage")
+    .createSignedUrl(fullPath, 3600);
+
+  if (signedError) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate signed URL",
+      error: signedError.message,
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    doctor_id,
+    profile_picture_url: signedUrlData.signedUrl,
+  });
+};
+
 module.exports = {
   insertDoctor,
   updateDoctor,
@@ -517,5 +594,6 @@ module.exports = {
   uploadDoctorProfilePicture,
   doctorAccountToggle,
   fetchAllDoctors,
-  fetchClinicsByDoctorId
+  fetchClinicsByDoctorId,
+  getDoctorProfilePicture
 };

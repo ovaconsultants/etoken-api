@@ -8,7 +8,8 @@ const {
    uploadDoctorProfilePicture,
    doctorAccountToggle,
    fetchAllDoctors,
-   fetchClinicsByDoctorId
+   fetchClinicsByDoctorId,
+   getDoctorProfilePicture,
 } = require("../controllers/doctorController");
 
 const upload = require("../middlewares/uploadMiddleware");
@@ -24,5 +25,6 @@ router.post("/uploadDoctorProfilePicture", upload.single("profile_picture"), upl
 router.put("/doctorAccountToggle", doctorAccountToggle);
 router.post("/fetchAllDoctors", fetchAllDoctors);
 router.get("/fetchClinicsByDoctorId", fetchClinicsByDoctorId);
+router.get("/getDoctorProfilePicture", getDoctorProfilePicture);
 
 module.exports = router;
