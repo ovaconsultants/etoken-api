@@ -1,4 +1,6 @@
 const db = require("../config/db");
+const fs = require("fs");
+const path = require("path");
 const asyncHandler = require("../middlewares/asyncHandler");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -163,7 +165,7 @@ Request Body form-data: {
 */
 const uploadDoctorProfilePicture = asyncHandler(async (req, res) => {
   const { doctor_id } = req.body;
-  console.log("res.body", req.body);
+
   if (!doctor_id) {
     return res.status(400).json({
       success: false,
@@ -171,16 +173,28 @@ const uploadDoctorProfilePicture = asyncHandler(async (req, res) => {
       error: "Missing required fields.",
     });
   }
-   // Check if file is uploaded
-   if (!req.file) {
+
+  if (!req.file) {
     return res.status(400).json({
-        success: false,
-        message: "No file uploaded.",
-        error: "Please provide an image file."
+      success: false,
+      message: "No file uploaded.",
+      error: "Please provide an image file.",
     });
-}
- // Get uploaded file path
- const profile_picture_url = `/uploads/doctorProfile/${doctor_id}/${req.file.filename}`;
+  }
+
+  const doctorDir = path.join(__dirname, "../uploads/doctorProfile", doctor_id.toString());
+  if (!fs.existsSync(doctorDir)) {
+    fs.mkdirSync(doctorDir, { recursive: true });
+  }
+
+  const ext = path.extname(req.file.originalname);
+  const newFilename = `profile_pic_${doctor_id}${ext}`;
+  const newPath = path.join(doctorDir, newFilename);
+
+  fs.renameSync(req.file.path, newPath);
+
+  const profile_picture_url = `/uploads/doctorProfile/${doctor_id}/${newFilename}`;
+
   await db.query("CALL etoken.sp_update_doctor_profile_picture($1, $2);", [
     doctor_id,
     profile_picture_url,
@@ -193,7 +207,7 @@ const uploadDoctorProfilePicture = asyncHandler(async (req, res) => {
     profile_picture_url,
     error: null,
   });
-}, "Error updating doctor profile picture:");
+});
 
 const insertClinic = asyncHandler(async (req, res) => {
   const {

@@ -5,27 +5,17 @@ const fs = require("fs");
 // Set up storage with dynamic path
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const doctorId = req.body.doctor_id; // Get doctor_id from request body
-        if (!doctorId) {
-            return cb(new Error("Doctor ID is required for file upload"), false);
-        }
-
-        const doctorDir = path.join(__dirname, "../uploads/doctorProfile", doctorId.toString());
-
-        // Ensure directory exists
-        if (!fs.existsSync(doctorDir)) {
-            fs.mkdirSync(doctorDir, { recursive: true });
-        }
-
-        cb(null, doctorDir); // Set the upload directory
+      const tempDir = path.join(__dirname, "../uploads/tmp");
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      cb(null, tempDir);
     },
     filename: (req, file, cb) => {
-        const doctorId = req.body.doctor_id;
-        const ext = path.extname(file.originalname); // Get file extension (.jpg, .png, etc.)
-        const filename = `profile_pic_${doctorId}${ext}`; // Standardized filename
-        cb(null, filename);
-    }
-});
+      cb(null, Date.now() + path.extname(file.originalname)); // temp filename
+    },
+  });
+  
 
 // File filter to allow only images
 const fileFilter = (req, file, cb) => {
