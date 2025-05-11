@@ -87,7 +87,7 @@ Method: PUT
 }
 */
 const updatePatient = asyncHandler(async (req, res) => {
-  const { patient_id, patient_name, area, mobile_number, email, modified_by } =
+  const { patient_id, patient_name, area, mobile_number, email, modified_by , age} =
     req.body;
 
   // Validate input
@@ -100,8 +100,8 @@ const updatePatient = asyncHandler(async (req, res) => {
   }
 
   const result = await db.query(
-    "SELECT etoken.fn_update_patient($1, $2, $3, $4, $5, $6) AS response_message;",
-    [patient_id, patient_name, area, mobile_number, email, modified_by]
+    "SELECT etoken.fn_update_patient($1, $2, $3, $4, $5, $6, $7) AS response_message;",
+    [patient_id, patient_name, area, mobile_number, email, modified_by, age]
   );
 
   res.status(200).json({
@@ -148,7 +148,6 @@ const fetchIndividualPatientInQueue = asyncHandler(async (req, res) => {
 }, "Error fetching patient queue:");
 
 const fetchAllPatientsByDoctorId = asyncHandler(async (req, res) => {
-  console.log("Fetching patients by doctor ID");
   const { doctor_id } = req.query;
 
   // Validate required field
