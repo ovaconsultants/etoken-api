@@ -19,7 +19,7 @@ const insertPatient = asyncHandler(async (req, res) => {
     area,
     mobile_number,
     email,
-    patient_profile_picture_url,
+    age,
     clinic_id,
     created_by,
   } = req.body;
@@ -38,7 +38,7 @@ const insertPatient = asyncHandler(async (req, res) => {
       area,
       mobile_number,
       email,
-      patient_profile_picture_url,
+      age,
       clinic_id,
       created_by,
       null,
