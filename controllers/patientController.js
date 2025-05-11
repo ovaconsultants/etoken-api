@@ -147,9 +147,47 @@ const fetchIndividualPatientInQueue = asyncHandler(async (req, res) => {
   });
 }, "Error fetching patient queue:");
 
+const fetchAllPatientsByDoctorId = asyncHandler(async (req, res) => {
+  console.log("Fetching patients by doctor ID");
+  const { doctor_id } = req.query;
+
+  // Validate required field
+  if (!doctor_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required parameter.",
+      error: "Doctor ID is required.",
+    });
+  }
+
+  const result = await db.query(
+    "SELECT * FROM etoken.fn_fetch_all_patients_by_doctor_id($1);",
+    [doctor_id]
+  );
+
+  // Check if any patients found
+  if (!result.rows.length) {
+    return res.status(404).json({
+      success: false,
+      message: "No patients found for the given doctor.",
+      patients: [],
+      error: "No records found.",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Patients fetched successfully.",
+    patients: result.rows,
+    error: null,
+  });
+}, "Error fetching patients by doctor Id");
+
+
 module.exports = {
   insertPatient,
   fetchAllPatients: [protect, fetchAllPatients],
   updatePatient: [protect, updatePatient],
   fetchIndividualPatientInQueue: [protect, fetchIndividualPatientInQueue],
+  fetchAllPatientsByDoctorId: [protect, fetchAllPatientsByDoctorId],
 };
