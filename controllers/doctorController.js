@@ -493,15 +493,6 @@ const fetchAllDoctors = asyncHandler(async (req, res) => {
 
   const result = await db.query(sql, [param]);
 
-  if (!result.rows.length) {
-    return res.status(200).json({
-      success: false,
-      message: doctor_id ? "Doctor not found." : "No doctors found.",
-      doctors: [],
-      error: "No records found."
-    });
-  }
-
   res.status(200).json({
     success: true,
     message: doctor_id ? "Doctor fetched successfully." : "Doctors fetched successfully.",

@@ -164,16 +164,6 @@ const fetchAllPatientsByDoctorId = asyncHandler(async (req, res) => {
     [doctor_id]
   );
 
-  // Check if any patients found
-  if (!result.rows.length) {
-    return res.status(200).json({
-      success: false,
-      message: "No patients found for the given doctor.",
-      patients: [],
-      error: "No records found.",
-    });
-  }
-
   res.status(200).json({
     success: true,
     message: "Patients fetched successfully.",
