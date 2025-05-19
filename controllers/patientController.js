@@ -22,17 +22,18 @@ const insertPatient = asyncHandler(async (req, res) => {
     age,
     clinic_id,
     created_by,
+    doctor_id,
   } = req.body;
 
-  if (!patient_name || !clinic_id || !created_by) {
+  if (!patient_name || !created_by || !doctor_id) {
     return res.status(400).json({
       success: false,
       message: "Missing required fields.",
-      error: "Patient name, clinic ID, and created_by are required.",
+      error: "Patient name, clinic ID, doctor_id and created_by are required.",
     });
   }
   const result = await db.query(
-    "CALL etoken.sp_insert_patient($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);",
+    "CALL etoken.sp_insert_patient($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,$11);",
     [
       patient_name,
       area,
@@ -41,6 +42,7 @@ const insertPatient = asyncHandler(async (req, res) => {
       age,
       clinic_id,
       created_by,
+      doctor_id,
       null,
       null,
       null,
