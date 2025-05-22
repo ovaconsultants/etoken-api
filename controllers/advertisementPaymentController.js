@@ -186,16 +186,6 @@ const fetchAdvertisementPaymentsByAdId = asyncHandler(async (req, res) => {
       [parseInt(ad_id)]
   );
 
-  // If no payments found
-  if (!result.rows.length) {
-      return res.status(404).json({
-          success: false,
-          message: `No payments found for advertisement ID ${ad_id}.`,
-          payments: [],
-          error: "No records found."
-      });
-  }
-
   res.status(200).json({
       success: true,
       message: "Advertisement payments fetched successfully.",

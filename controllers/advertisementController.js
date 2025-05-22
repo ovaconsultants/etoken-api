@@ -96,17 +96,7 @@ const insertAdvertisement = asyncHandler(async (req, res) => {
     const result = await db.query(
         "SELECT * FROM etoken.fn_fetch_active_advertisements($1, $2);",
         [parseInt(doctor_id), parseInt(clinic_id)]
-    );
-
-    // If no advertisements found
-    if (!result.rows.length) {
-        return res.status(404).json({
-            success: false,
-            message: "No active advertisements found.",
-            advertisements: [],
-            error: "No records found."
-        });
-    }
+    );  
 
     res.status(200).json({
         success: true,
