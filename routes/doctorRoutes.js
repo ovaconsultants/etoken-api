@@ -5,11 +5,11 @@ const {
    insertClinic,
    insertDoctorClinicSchedule,
    doctorSignIn,
-   uploadDoctorProfilePicture,
+   uploadImage,
    doctorAccountToggle,
    fetchAllDoctors,
    fetchClinicsByDoctorId,
-   getDoctorProfilePicture,
+   fetchImage,
 } = require("../controllers/doctorController");
 
 const upload = require("../middlewares/uploadMiddleware");
@@ -21,10 +21,10 @@ router.put("/updateDoctor", updateDoctor);
 router.post("/addClinic", insertClinic);
 router.post("/schedule", insertDoctorClinicSchedule);
 router.post("/signIn", doctorSignIn);
-router.post("/uploadDoctorProfilePicture", upload.single("profile_picture"), uploadDoctorProfilePicture);
+router.post("/uploadImage", upload.single("image"), uploadImage);
 router.put("/doctorAccountToggle", doctorAccountToggle);
 router.post("/fetchAllDoctors", fetchAllDoctors);
 router.get("/fetchClinicsByDoctorId", fetchClinicsByDoctorId);
-router.get("/getDoctorProfilePicture", getDoctorProfilePicture);
+router.get("/fetchImage", fetchImage);
 
 module.exports = router;
