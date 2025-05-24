@@ -540,12 +540,11 @@ const getDoctorProfilePicture = async (req, res) => {
 
   const folderPath = `doctor-profile/${doctor_id}/`;
 
-  // List files in the folder
   const { data: files, error: listError } = await supabase.storage
     .from(bucketName)
     .list(folderPath);
 
-  if (listError || !files.length) {
+  if (listError || !files || files.length === 0) {
     return res.status(404).json({
       success: false,
       message: "Profile picture not found",
@@ -553,12 +552,22 @@ const getDoctorProfilePicture = async (req, res) => {
     });
   }
 
-  // Pick first file (assuming only one image exists)
-  const imageFile = files[0].name;
-  const fullPath = `${folderPath}${imageFile}`;
+  // Match file name with any image extension
+  const profileImageFile = files.find(file =>
+    /^profilePicture\.(jpg|jpeg|png)$/i.test(file.name)
+  );
+
+  if (!profileImageFile) {
+    return res.status(404).json({
+      success: false,
+      message: "profilePicture.{jpg,jpeg,png} not found in the folder",
+    });
+  }
+
+  const fullPath = `${folderPath}${profileImageFile.name}`;
 
   const { data: signedUrlData, error: signedError } = await supabase.storage
-    .from("e-token-dev-storage")
+    .from(bucketName)
     .createSignedUrl(fullPath, 3600);
 
   if (signedError) {
