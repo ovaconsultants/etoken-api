@@ -166,21 +166,21 @@ Request Body form-data: {
     Bearer Token: JWT Token
 */
 
-const uploadDoctorProfilePicture = async (req, res) => {
-  const { doctor_id } = req.body;
+const uploadImage= async (req, res) => {
+  const { userId } = req.body;
 
-  if (!req.file || !doctor_id) {
+  if (!req.file || !userId) {
     return res.status(400).json({
       success: false,
-      message: "Missing file or doctor_id",
+      message: "Missing file or userId",
     });
   }
 
-  const folderPath = `doctor-profile/${doctor_id}/`;
+  const folderPath = `doctor-profile/${userId}/`;
 
   // 1. List existing files in the folder
   const { data: files, error:listError } = await supabase.storage
-    .from("e-token-dev-storage")
+    .from(bucketName)
     .list(folderPath);
 
     if (listError) {
@@ -194,7 +194,7 @@ const uploadDoctorProfilePicture = async (req, res) => {
   if (files && files.length > 0) {
     const filePathsToDelete = files.map(f => `${folderPath}${f.name}`);
     await supabase.storage
-      .from("e-token-dev-storage")
+      .from(bucketName)
       .remove(filePathsToDelete);
   }
 
@@ -203,7 +203,7 @@ const uploadDoctorProfilePicture = async (req, res) => {
   const filePath = `${folderPath}profilePicture${fileExt}`;
 
   const { error: uploadError } = await supabase.storage
-    .from("e-token-dev-storage")
+    .from(bucketName)
     .upload(filePath, req.file.buffer, {
       contentType: req.file.mimetype,
       upsert: true,
@@ -212,14 +212,14 @@ const uploadDoctorProfilePicture = async (req, res) => {
   if (uploadError) {
     return res.status(500).json({
       success: false,
-      message: "Upload failed",
+      message: "Upload image failed",
       error: uploadError.message,
     });
   }
 
   // 4. Generate signed URL
   const { data: signedUrlData, error: signedError } = await supabase.storage
-    .from("e-token-dev-storage")
+    .from(bucketName)
     .createSignedUrl(filePath, 3600);
 
   if (signedError) {
@@ -232,8 +232,8 @@ const uploadDoctorProfilePicture = async (req, res) => {
 
   res.status(200).json({
     success: true,
-    doctor_id,
-    profile_picture_url: signedUrlData.signedUrl,
+    userId,
+    imageUrl: signedUrlData.signedUrl,
   });
 };
 
@@ -528,17 +528,17 @@ const fetchClinicsByDoctorId = asyncHandler(async (req, res) => {
   });
 }, "Error fetching clinics for doctor");
 
-const getDoctorProfilePicture = async (req, res) => {
-  const { doctor_id } = req.query;
+const fetchImage = async (req, res) => {
+  const { userId } = req.query;
 
-  if (!doctor_id) {
+  if (!userId) {
     return res.status(400).json({
       success: false,
-      message: "doctor_id is required",
+      message: "userId is required",
     });
   }
 
-  const folderPath = `doctor-profile/${doctor_id}/`;
+  const folderPath = `doctor-profile/${userId}/`;
 
   const { data: files, error: listError } = await supabase.storage
     .from(bucketName)
@@ -580,8 +580,8 @@ const getDoctorProfilePicture = async (req, res) => {
 
   res.status(200).json({
     success: true,
-    doctor_id,
-    profile_picture_url: signedUrlData.signedUrl,
+    userId,
+    imageUrl: signedUrlData.signedUrl,
   });
 };
 
@@ -591,9 +591,9 @@ module.exports = {
   insertClinic,
   insertDoctorClinicSchedule,
   doctorSignIn,
-  uploadDoctorProfilePicture,
+  uploadImage,
   doctorAccountToggle,
   fetchAllDoctors,
   fetchClinicsByDoctorId,
-  getDoctorProfilePicture
+  fetchImage
 };
