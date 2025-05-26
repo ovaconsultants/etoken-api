@@ -545,8 +545,8 @@ const fetchImage = async (req, res) => {
     .list(folderPath);
 
   if (listError || !files || files.length === 0) {
-    return res.status(404).json({
-      success: false,
+    return res.status(200).json({
+      success: true,
       message: "Profile picture not found",
       error: listError?.message || "No image in folder",
     });
@@ -554,17 +554,17 @@ const fetchImage = async (req, res) => {
 
   // Match file name with any image extension
   const profileImageFile = files.find(file =>
-    /^profilePicture\.(jpg|jpeg|png)$/i.test(file.name)
+    /^profilePicture\.(jpg|jpeg|png)$/i.test(file?.name)
   );
 
   if (!profileImageFile) {
-    return res.status(404).json({
-      success: false,
+    return res.status(200).json({
+      success: true,
       message: "profilePicture.{jpg,jpeg,png} not found in the folder",
     });
   }
 
-  const fullPath = `${folderPath}${profileImageFile.name}`;
+  const fullPath = `${folderPath}${profileImageFile?.name}`;
 
   const { data: signedUrlData, error: signedError } = await supabase.storage
     .from(bucketName)
