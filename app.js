@@ -19,11 +19,22 @@ const app = express();
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.use(cors({
-  origin: process.env.WEB_URL, // Use the WEB_URL from environment or fallback to localhost
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true, // Allow cookies (including JWT cookie) to be sent
-}));
+const corsOptionsDelegate = function (req, callback) {
+  const origin = req.header('Origin');
+  const isLocal = origin && (origin.includes('localhost') || origin.startsWith('http://'));
+
+  const corsOptions = isLocal
+    ? { origin: true, credentials: true }
+    : {
+        origin: process.env.WEB_URL,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+      };
+
+  callback(null, corsOptions);
+};
+
+app.use(cors(corsOptionsDelegate));
 
 app.use(express.json()); // Parse JSON bodies
 
