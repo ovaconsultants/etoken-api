@@ -340,7 +340,7 @@ const insertDoctorClinicSchedule = asyncHandler(async (req, res) => {
 }, "Error inserting schedule:");
 
 /* Method: POST
-URL: api/doctor/signin
+URL: doctor/signin
 Request Body: {
     "email_or_mobile": "johndoe@example.com",
     "password": "1234"
@@ -366,15 +366,15 @@ const doctorSignIn = asyncHandler(async (req, res) => {
   const rows = result.rows;
 
   // Check for failed login
-  if (!rows.length || !rows.some((r) => r.success)) {
-    return res.status(401).json({
-      success: false,
-      message: "Invalid credentials",
-      doctor: null,
-      clinics: [],
-      error: "Authentication failed.",
-    });
-  }
+  // if (!rows.length || !rows.some((r) => r.success)) {
+  //   return res.status(401).json({
+  //     success: false,
+  //     message: "Invalid credentials",
+  //     doctor: null,
+  //     clinics: [],
+  //     error: "Authentication failed.",
+  //   });
+  // }
 
   // Extract doctor profile from first matching row
   const {
@@ -410,8 +410,8 @@ const doctorSignIn = asyncHandler(async (req, res) => {
 
   // Respond with full profile
   res.status(200).json({
-    success: true,
-    message: "Authentication successful",
+    success: rows[0].success,
+    message: rows[0].message,
     token,
     doctor: {
       doctor_id,
